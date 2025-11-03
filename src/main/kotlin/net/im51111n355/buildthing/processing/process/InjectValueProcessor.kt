@@ -74,19 +74,19 @@ class InjectValueProcessor(
                         modified = true
                         return@removeIf true
                     }
-                    if (isInjectable && it.type == Type.getType(String::class.java) && annotation.type == tIvString) {
+                    if (isInjectable && it.type == Type.BOOLEAN_TYPE && annotation.type == tIvBoolean) {
                         val key = annotation.getRequiredArgument<String>("value")
-                        val value = master.config.values[key] as String
+                        val value = master.config.values[key] as Boolean
 
-                        it.value = value
+                        it.value = if (value) 1 else 0
 
                         injectedFields.add(FieldInfo(classNode.name, it.name, it.desc))
                         modified = true
                         return@removeIf true
                     }
-                    if (isInjectable && it.type == Type.getType(Boolean::class.java) && annotation.type == tIvBoolean) {
+                    if (isInjectable && it.type == Type.getType(String::class.java) && annotation.type == tIvString) {
                         val key = annotation.getRequiredArgument<String>("value")
-                        val value = master.config.values[key] as Boolean
+                        val value = master.config.values[key] as String
 
                         it.value = value
 
