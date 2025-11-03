@@ -117,20 +117,21 @@ public static final long BUILD_TIME = 0L;
 В резульате примера - BUILD_TIME во время сборки будет подменено на время сборки.
 
 ## Использование
-Для начала нужно собрать вырезалку и загрузить в mavenLocal, проверяем Java 1.8, клонируем репозиторий и прописываем на buildthing`е:
-```bash
-gradle :buildthing:publishToMavenLocal
-```
+Плагин доступен на Jitpack.io так что вам не нужно собирать его самому. 
+Рекомендуется использовать последнюю (-SNAPSHOT) версию потому что вырезалка в разработке и могут быть исправления.
 
 Добавляем строчки чтобы применить плагин:
 ```groovy
 buildscript {
     repositories {
-        mavenLocal()
+        maven {
+            name = "Jitpack"
+            url = "https://jitpack.io"
+        }
         // ... Остальное тут
     }
     dependencies {
-        classpath("net.im51111n355.buildthing:buildthing:1.0.0")
+        classpath("com.github.51111N355:buildthing:-SNAPSHOT")
         // ... Остальное тут
     }
 }
