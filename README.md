@@ -1,0 +1,234 @@
+# BuildThing by 51111n355
+- Инструментация для разделения Java, Kotlin проектов на стороны (И не только)
+
+## Возможности
+
+### Поддержка Java Лямбд
+Удаляет private synthetic реализации лямбд если после удаления на основе флагов не остается их вызовов.
+
+Контроллируется настройкой `BuildThingConfig#deleteJavaStyleLambdas`, включено по умолчанию
+
+### Поддержка Kotlin Лямбд (Иногда)
+Удаляет методы которые считаются лямбдами в стиле Kotlin если после удаления на основе флагов не остается их вызовов.
+
+Контроллируется настройкой `BuildThingConfig#deleteKotlinStyleLambdas`, включено по умолчанию
+
+> ⚠️ Иногда котлин генерирует лямбды вообще в отдельном файле, и я не уверен обработается ли это...
+
+### Флаги
+Альтернатива вариантам вырезания Client/Server/Любой другой ключ, с флагами можно реализовать включение/выключение функционала. 
+
+Флаги устанавливаются в `BuildThingConfig.flags`, например:
+```kts
+// Добавляет в настройку билда флаг для включения клиента
+config.flags += "client"
+
+// Добавляет в настройку билда флаг для включения сервера
+config.flags += "server"
+
+// Добавляет в настройку билда флаг для включения отладки
+config.flags += "debugging"
+
+// И так далее...
+```
+
+Дальше в Java/Kotlin коде вы можете отметить методы/поля/классы аннотацией @FlagCuttable
+```java
+// Этот метод будет удален при сборке если нет флага "server" в конфиге при сборке.
+@FlagCuttable("server")
+void someServerFunction() {
+    // ...
+}
+```
+
+Для некоторого функционала иногда очень полезно помечать не весь метод как серверный... 
+В вырезалке от JustAGod это было решено через `Invoke.xxx` методы.
+
+Т.К. в BuildThing может быть любое количество флагов - создание `Invoke` класса на пользователе библиотеки, но на самом деле это максимально просто...
+
+Подобные классы и `invokeXXX` методы очень полезны чтобы правильно вырезать поля (Выполнять инициализацию поля в статичном/обычном конструкторе из invokeXXX метода) 
+
+```java
+// Вызовы методов с аннотацией @RemoveAtCallsite будут полностью удаляться (как и сам метод)
+@RemoveAtCallsite
+@FlagCuttable("server")
+static void invokeServer(Runnable runnable) {
+    runnable.run();
+}
+
+void mixedSideCode() {
+    invokeServer(() -> {
+        // Код для сервер стороны
+        // Этот код как и сам факт существования вызова `invokeServer` будет вырезан.
+        // ...
+    });
+    
+    // Код для общей стороны
+    // ...
+}
+```
+
+> ⚠️ Теоретически можно использовать @RemoveAtCallsite не только для статичных методов с одним параметром лямбдой,
+> но параметры переданные в такие функции могут быть не полностью вырезанны...
+> 
+> Как пример проблемы из-за этого - в байт-коде останется какая-то строка-константа которую вы передавали в @RemoveAtCallsite метод. 
+> 
+> В использовании как в примере - static + единственный параметр это Runnable (Может быть любой `FunctionalInterface`) - удаление лямбды гарантируется.
+
+Дополнительно есть аннотация `@InjectFlag` чтобы подставить значение `static final boolean` поля значением флага.
+
+```java
+@InjectFlag("server")
+public static final boolean IS_SERVER = true;
+```
+> ⚠️ Т.К. обработка `@InjectFlag` применяется после сборки - Java компилятор может раньше чем надо удалить содержимое `if (IS_SERVER) { /* ЭТОГО */ }` блока если по умолчанию стоит значение `false`.
+> 
+> В интернете предлагается использовать `null!=null ? X : Y` чтобы избавиться от inline'инга компилятора.
+
+> ⚠️ `@InjectFlag` не будет удалять содержимое `if (IS_SERVER) { /* ЭТОГО */ }` блока даже если стоит значение `false`.
+
+### Валидация
+Если вырезалка находит оставшиеся использования чего-то что будет удалено - будет написана ошибка.
+
+### Рандомизация
+Аннотациями `@InjectRandom.Int`, `@InjectRandom.Float`, `@InjectRandom.Long`, `@InjectRandom.Double` можно установить случайное значение `static final` полю на время компиляции.
+Можно указывать минимальное-максимальное значение.
+
+```java
+@InjectRandom.Int(
+    minInclusive=1,
+    maxExclusive=101
+)
+public static final int someValue = 0;
+```
+
+### Значения
+Аннотациями `@InjectValue.Int`, `@InjectValue.Float`, `@InjectValue.Long`, `@InjectValue.Double`, `@InjectValue.Boolean`, `@InjectValue.String` можно установить значение `static final` полю на значение указанное в конфиге.
+```kt
+// Ставит значение "build_time" на текущее время 
+config.values.put("build_time", System.currentTimeMillis())
+```
+
+```java
+@InjectValue.Long("build_time")
+public static final long BUILD_TIME = 0L;
+```
+
+В резульате примера - BUILD_TIME во время сборки будет подменено на время сборки.
+
+## Использование
+Для начала нужно собрать вырезалку и загрузить в mavenLocal, проверяем Java 1.8, клонируем репозиторий и прописываем на buildthing`е:
+```bash
+gradle :buildthing:publishToMavenLocal
+```
+
+Добавляем строчки чтобы применить плагин:
+```groovy
+buildscript {
+    repositories {
+        mavenLocal()
+        // ... Остальное тут
+    }
+    dependencies {
+        classpath("net.im51111n355.buildthing:buildthing:1.0.0")
+        // ... Остальное тут
+    }
+}
+
+// Ниже plugins { ... } блока если он у вас есть
+apply plugin: "net.im51111n355.buildthing"
+```
+
+После применения плагина нужно создать таски для своих настроек сборки, например в KTS:
+
+```kts
+// Помогалочка для создания BT таска от Jar
+fun sideTask(name: String, configuration: BuildThingTask.() -> Unit) {
+    tasks.create<BuildThingTask>("build$name") {
+        // Описания
+        description = "Build \"$name\""
+        group = "build profiles"
+
+        // Привязка к Jar
+        dependsOn("jar")
+        from (Callable {
+            tasks.named<Jar>("jar")
+                .get()
+                .outputs.files
+                .map { zipTree(it) }
+        })
+
+        // Значения
+        config.values.put("build_time", System.currentTimeMillis())
+
+        // Конфиг
+        configuration()
+    }
+}
+
+sideTask("Client") {
+    config.flags += "client"
+}
+
+sideTask("Server") {
+    config.flags += "server"
+}
+```
+
+Или в groovy
+
+```groovy
+def sideTask(String name, Closure configuration) {
+    tasks.register("build$name", BuildThingTask) {
+        // Описания
+        description = "Build \"$name\""
+        group = "build profiles"
+        
+        // Отдельное название файла
+        archiveClassifier = "[$name]"
+
+        // Привязка к jar
+        dependsOn("jar")
+
+        from {
+            jar
+                    .outputs.files
+                    .collect { zipTree(it) }
+        }
+
+        // Значения
+        config.values.put("build_time", System.currentTimeMillis())
+
+        // Конфиг
+        configuration.delegate = delegate
+        configuration()
+    }
+}
+
+sideTask("Client") {
+    config.flags.add("client")
+}
+
+sideTask("Server") {
+    config.flags.add("server")
+}
+```
+
+
+## Привязка к...
+
+
+### ShadowJar
+Чтобы применять адекватно после shadowJar - замените `dependsOn("jar")` на `dependsOn("shadowJar")` и `jar.outputs.xxx` на `shadowJar.outputs.xxx` в создании тасков BT.
+
+### Forge Reobf 1.7.10
+На самом деле применить Reobf Forge очень просто, добавляете записи как в примере ниже и билдить через `gradle reobf`
+```
+reobf.reobf(buildClient) { spec ->
+    spec.classpath = sourceSets.main.compileClasspath
+}
+
+reobf.reobf(buildServer) { spec ->
+    spec.classpath = sourceSets.main.compileClasspath
+}
+```
