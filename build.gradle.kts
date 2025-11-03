@@ -1,5 +1,3 @@
-import groovy.util.NodeList
-
 plugins {
     `kotlin-dsl`
     id("idea")
@@ -61,16 +59,10 @@ publishing {
             version = project.version.toString()
 
             from(components["java"])
-
-            // Эта штучка запакована в сам .jar И как классы и как .jar для сборо
         }
     }
 
     repositories {
         mavenLocal()
     }
-}
-
-fun Any.asList(): NodeList {
-    return this as NodeList
 }
