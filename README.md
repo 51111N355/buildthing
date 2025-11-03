@@ -142,75 +142,29 @@ apply plugin: "net.im51111n355.buildthing"
 После применения плагина нужно создать таски для своих настроек сборки, например в KTS:
 
 ```kts
-// Помогалочка для создания BT таска от Jar
-fun sideTask(name: String, configuration: BuildThingTask.() -> Unit) {
-    tasks.create<BuildThingTask>("build$name") {
-        // Описания
-        description = "Build \"$name\""
-        group = "build profiles"
+val plugin = plugins.findPlugin(BuildThingPlugin::class.java)!!
 
-        // Привязка к Jar
-        dependsOn("jar")
-        from (Callable {
-            tasks.named<Jar>("jar")
-                .get()
-                .outputs.files
-                .map { zipTree(it) }
-        })
-
-        // Значения
-        config.values.put("build_time", System.currentTimeMillis())
-
-        // Конфиг
-        configuration()
-    }
+plugin.sideTask("Client") {
+    config.flags.add("client")
 }
 
-sideTask("Client") {
-    config.flags += "client"
-}
-
-sideTask("Server") {
-    config.flags += "server"
+plugin.sideTask("Server") {
+    config.flags.add("server")
 }
 ```
 
 Или в groovy
 
 ```groovy
-def sideTask(String name, Closure configuration) {
-    tasks.register("build$name", BuildThingTask) {
-        // Описания
-        description = "Build \"$name\""
-        group = "build profiles"
-        
-        // Отдельное название файла
-        archiveClassifier = "[$name]"
+import net.im51111n355.buildthing.BuildThingPlugin
+def plugin = plugins.findPlugin(BuildThingPlugin)
 
-        // Привязка к jar
-        dependsOn("jar")
-
-        from {
-            jar
-                    .outputs.files
-                    .collect { zipTree(it) }
-        }
-
-        // Значения
-        config.values.put("build_time", System.currentTimeMillis())
-
-        // Конфиг
-        configuration.delegate = delegate
-        configuration()
-    }
+plugin.sideTask("Client") {
+    it.config.flags.add("client")
 }
 
-sideTask("Client") {
-    config.flags.add("client")
-}
-
-sideTask("Server") {
-    config.flags.add("server")
+plugin.sideTask("Server") {
+    it.config.flags.add("server")
 }
 ```
 
@@ -219,7 +173,7 @@ sideTask("Server") {
 
 
 ### ShadowJar
-Чтобы применять адекватно после shadowJar - замените `dependsOn("jar")` на `dependsOn("shadowJar")` и `jar.outputs.xxx` на `shadowJar.outputs.xxx` в создании тасков BT.
+Чтобы применять адекватно после shadowJar - замените в sideTask после строки-стороны можно передать любой другой таск который будет браться за основу вместо "jar".
 
 ### Forge Reobf 1.7.10
 На самом деле применить Reobf Forge очень просто, добавляете записи как в примере ниже и билдить через `gradle reobf`

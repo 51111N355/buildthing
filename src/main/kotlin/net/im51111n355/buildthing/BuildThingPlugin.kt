@@ -1,14 +1,24 @@
 package net.im51111n355.buildthing
 
+import net.im51111n355.buildthing.task.BuildThingTask
 import net.im51111n355.buildthing.util.sha256
+import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.tasks.TaskProvider
+import org.gradle.api.tasks.bundling.Jar
+import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.dependencies
+import org.gradle.kotlin.dsl.named
 import java.io.File
 import java.io.InputStream
+import java.util.concurrent.Callable
 
 class BuildThingPlugin : Plugin<Project> {
+    private lateinit var project: Project
+
     override fun apply(project: Project) {
+        this.project = project
         injectStd(project)
     }
 
@@ -33,6 +43,28 @@ class BuildThingPlugin : Plugin<Project> {
             project.dependencies {
                 add("compileOnly", project.files(standardJar))
             }
+        }
+    }
+
+    @JvmOverloads
+    fun sideTask(
+        name: String,
+        fromTask: DefaultTask = project.tasks.named<Jar>("jar").get(),
+        configure: BuildThingTask.() -> Unit
+    ) {
+        project.tasks.create<BuildThingTask>("build$name") {
+            description  = "Build $name"
+            group = "buildthing build profile"
+
+            dependsOn(fromTask)
+
+            from(Callable {
+                fromTask
+                    .outputs.files
+                    .map { project.zipTree(it) }
+            })
+
+            configure()
         }
     }
 }
