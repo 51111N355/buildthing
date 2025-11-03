@@ -1,4 +1,5 @@
 # BuildThing by 51111n355
+[![](https://jitpack.io/v/51111N355/buildthing.svg)](https://jitpack.io/#51111N355/buildthing)
 - Инструментация для разделения Java, Kotlin проектов на стороны (И не только)
 
 ## Возможности
