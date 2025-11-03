@@ -22,13 +22,13 @@
 Флаги устанавливаются в `BuildThingConfig.flags`, например:
 ```kts
 // Добавляет в настройку билда флаг для включения клиента
-config.flags += "client"
+config.flags.add("client")
 
 // Добавляет в настройку билда флаг для включения сервера
-config.flags += "server"
+config.flags.add("server")
 
 // Добавляет в настройку билда флаг для включения отладки
-config.flags += "debugging"
+config.flags.add("debugging")
 
 // И так далее...
 ```
