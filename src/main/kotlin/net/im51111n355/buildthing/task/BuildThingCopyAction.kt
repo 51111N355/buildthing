@@ -35,7 +35,7 @@ class BuildThingCopyAction(
             for (file in processIn.walkTopDown()) {
                 if (file.isDirectory) continue
 
-                val entry = ZipEntry(file.relativeTo(processIn).path)
+                val entry = ZipEntry(file.relativeTo(processIn).path.replace("\\", "/"))
                 zip.putNextEntry(entry)
                 file.inputStream().use { it.copyTo(zip) }
                 zip.closeEntry()
