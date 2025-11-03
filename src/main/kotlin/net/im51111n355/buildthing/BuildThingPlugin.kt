@@ -55,6 +55,7 @@ class BuildThingPlugin : Plugin<Project> {
         project.tasks.create<BuildThingTask>("build$name") {
             description  = "Build $name"
             group = "buildthing build profile"
+            archiveClassifier.set("[$name]")
 
             dependsOn(fromTask)
 
