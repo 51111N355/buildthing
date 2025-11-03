@@ -39,15 +39,22 @@ tasks.register<Copy>("bundleStandardJar") {
         .archiveFile
     )
     into("$buildDir/bundle")
+
+    rename { "standard.jar" }
 }
 
 tasks.named<Jar>("jar") {
     dependsOn(":bundleStandardJar")
-    from("$buildDir/bundle/standard.jar")
+
+    from({
+        "$buildDir/bundle/standard.jar"
+    })
 
     // Аннотации нужны запакованные для Type.getType(...),
     // мне лень разбираться с maven local для этой штуки поэтому я запакую.
-    from(zipTree("$buildDir/bundle/standard.jar"))
+    from({
+        zipTree("$buildDir/bundle/standard.jar")
+    })
 }
 
 // Чтобы само подтянуло ASM, Kotlin (?), и ещё что нужно
