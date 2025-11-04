@@ -31,8 +31,6 @@ import org.objectweb.asm.tree.TypeInsnNode
 class FlagCuttingProcessor(
     val master: BuildThingProcessor
 ) {
-    // Список классов которые нам принадлежат
-    private val ownedClasses = mutableSetOf<String>()
     // Классы на удаление
     private val classesToRemove = mutableSetOf<String>()
     // Методы на удаление
@@ -47,25 +45,12 @@ class FlagCuttingProcessor(
     private val fieldsToRemove = mutableSetOf<MemberInfo>()
 
     fun process() {
-        // Список классов которые нам принадлежат
-        // Есть прикол что Forge события могут засчитаться за наш внутренний класс сносилкой внутренних классов
-        master.processAll { classNode ->
-            ownedClasses.add(classNode.name)
-            return@processAll ProcessAllAction.NOT_MODIFIED
-        }
-
         // Сначала найти что удалять.
         // Вносит в classesToRemove, methodsToRemove, methodsToRemoveAtCallsite, fieldsToRemove цели для сноса
         master.processAll { classNode ->
             // Проверка на вырезание класса
             if (isCuttable(classNode.visibleAnnotations)) {
                 classesToRemove.add(classNode.name)
-
-                for (node in classNode.innerClasses) {
-                    if (node.name in ownedClasses)
-                        classesToRemove.add(node.name)
-                }
-
                 return@processAll ProcessAllAction.NOT_MODIFIED
             }
 
