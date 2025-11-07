@@ -100,7 +100,7 @@ class FlagCuttingProcessor(
 
             // Кандидаты на снос
             val javaStyleCandidates = classNode.methods
-                .filter { it.isPrivate && it.isSynthetic && it.isStatic && it.name.contains("lambda$") }
+                .filter { it.isPrivate && it.isSynthetic && it.name.contains("lambda$") }
                 .map { MemberInfo(classNode.name, it.name, it.desc) }
                 .toMutableList()
             val kotlinStyleCandidates = classNode.methods
