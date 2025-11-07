@@ -51,6 +51,14 @@ class FlagCuttingProcessor(
             // Проверка на вырезание класса
             if (isCuttable(classNode.visibleAnnotations)) {
                 classesToRemove.add(classNode.name)
+
+                // Приватные классы с названиями формата Some$Other
+                for (innerClassNode in classNode.innerClasses) {
+                    if (innerClassNode.name.startsWith(classNode.name + "$")) {
+                        classesToRemove.add(innerClassNode.name)
+                    }
+                }
+
                 return@processAll ProcessAllAction.NOT_MODIFIED
             }
 
