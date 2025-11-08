@@ -199,7 +199,7 @@ buildthing.sideTask("Server", shadowJar) {
 ```
 
 ### Forge Reobf 1.7.10
-На самом деле применить Reobf Forge очень просто, добавляете записи как в примере ниже и билдить через `gradle reobf`
+На самом деле применить Reobf Forge очень просто, добавляете записи как в примере ниже и билдить через `gradle build`
 ```groovy
 reobf.reobf(buildClient) { spec ->
     spec.classpath = sourceSets.main.compileClasspath
