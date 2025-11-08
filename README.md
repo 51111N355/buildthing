@@ -135,6 +135,12 @@ buildscript {
         classpath("com.github.51111N355:buildthing:-SNAPSHOT")
         // ... Остальное тут
     }
+    // Чтобы при обновлении вырезалки Gradle не кешировал старую версию 24 часа
+    // Не обязательно, но рекомендуется
+    configurations.classpath.resolutionStrategy {
+        cacheDynamicVersionsFor 0, 'seconds'
+        cacheChangingModulesFor 0, 'seconds'
+    }
 }
 
 // Ниже plugins { ... } блока если он у вас есть
