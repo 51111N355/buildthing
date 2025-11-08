@@ -350,7 +350,12 @@ class FlagCuttingProcessor(
             // Сносит методы которые считаются как на удаление все вместе
             // Тут же обработка настроек на удаление лямбд, и всего другого что я может быть добавлю
             classNode.methods
-                .removeIf { !isMethodGoingToExist(classNode, it, true) }
+                .removeIf {
+                    val removal = !isMethodGoingToExist(classNode, it, true)
+                    if (removal) modified = true
+
+                    return@removeIf removal
+                }
 
             // Снос вызовов RemoveAtCallsite методов
             classNode.methods.forEach {
