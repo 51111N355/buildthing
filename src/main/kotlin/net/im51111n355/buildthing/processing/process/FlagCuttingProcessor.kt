@@ -31,6 +31,10 @@ import org.objectweb.asm.tree.TypeInsnNode
 class FlagCuttingProcessor(
     val master: BuildThingProcessor
 ) {
+    // Владелец Класс -> Его внутренний класс на удаление
+    private val classesOwnedByClasses = mutableSetOf<Pair<String, String>>()
+    // Владелец МЕТОД -> Внутренний класс на удаление
+    private val classesOwnedByMethods = mutableSetOf<Pair<MemberInfo, String>>()
     // Классы на удаление
     private val classesToRemove = mutableSetOf<String>()
     // Методы на удаление
@@ -45,6 +49,22 @@ class FlagCuttingProcessor(
     private val fieldsToRemove = mutableSetOf<MemberInfo>()
 
     fun process() {
+        // Скан удаляемых классов на outerClass / outerMethod+outerMethodDesc
+        master.processAll { classNode ->
+            val outerClass = classNode.outerClass
+            val outerMethod = classNode.outerMethod
+            val outerMethodDesc = classNode.outerMethodDesc
+
+            if (outerClass != null && outerMethod != null && outerMethodDesc != null) {
+                val ownerInfo = MemberInfo(outerClass, outerMethod, outerMethodDesc)
+                classesOwnedByMethods.add(Pair(ownerInfo, classNode.name))
+            } else if (outerClass != null) {
+                classesOwnedByClasses.add(Pair(outerClass, classNode.name))
+            }
+
+            return@processAll ProcessAllAction.NOT_MODIFIED
+        }
+
         // Сначала найти что удалять.
         // Вносит в classesToRemove, methodsToRemove, methodsToRemoveAtCallsite, fieldsToRemove цели для сноса
         master.processAll { classNode ->
@@ -52,12 +72,17 @@ class FlagCuttingProcessor(
             if (isCuttable(classNode.visibleAnnotations)) {
                 classesToRemove.add(classNode.name)
 
-                // Приватные классы с названиями формата Some$Other
-                for (innerClassNode in classNode.innerClasses) {
-                    if (innerClassNode.name.startsWith(classNode.name + "$")) {
-                        classesToRemove.add(innerClassNode.name)
-                    }
-                }
+                // Классы которые относятся именно к этому классу
+                classesOwnedByClasses
+                    .filter { it.first == classNode.name }
+                    .map { it.second }
+                    .forEach(classesToRemove::add)
+
+                // Классы которые относятся к методам этого класса тоже
+                classesOwnedByMethods
+                    .filter { it.first.className == classNode.name }
+                    .map { it.second }
+                    .forEach(classesToRemove::add)
 
                 return@processAll ProcessAllAction.NOT_MODIFIED
             }
@@ -73,11 +98,19 @@ class FlagCuttingProcessor(
                     else
                         methodsToRemove
 
-                    listTo.add(MemberInfo(
+                    val member = MemberInfo(
                         classNode.name,
                         it.name,
                         it.desc
-                    ))
+                    )
+
+                    listTo.add(member)
+
+                    // Классы которые относятся к этому методу тоже
+                    classesOwnedByMethods
+                        .filter { it.first == member }
+                        .map { it.second }
+                        .forEach(classesToRemove::add)
                 }
 
             // Проверка на удаление полей
