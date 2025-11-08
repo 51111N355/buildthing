@@ -283,7 +283,7 @@ class FlagCuttingProcessor(
                             insn.desc
                         )
 
-                        if (info in methodsToRemove || info in javaStyleLambdaMethodsToRemove || info in kotlinStyleLambdaMethodsToRemove) {
+                        if (!isMethodMemberGoingToExist(info, false)) {
                             master.project.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has a call to a method that will be removed (${info}).")
                             validationIssues = true
                         }
@@ -347,20 +347,10 @@ class FlagCuttingProcessor(
 
             var modified = false
 
-            // Методы
+            // Сносит методы которые считаются как на удаление все вместе
+            // Тут же обработка настроек на удаление лямбд, и всего другого что я может быть добавлю
             classNode.methods
-                .removeIf {
-                    val info = MemberInfo(
-                        classNode.name,
-                        it.name,
-                        it.desc
-                    )
-
-                    val shouldRemove = info in methodsToRemove || info in methodsToRemoveAtCallsite
-                    if (shouldRemove) modified = true
-
-                    return@removeIf shouldRemove
-                }
+                .removeIf { !isMethodGoingToExist(classNode, it, true) }
 
             // Снос вызовов RemoveAtCallsite методов
             classNode.methods.forEach {
@@ -455,35 +445,6 @@ class FlagCuttingProcessor(
                     return@removeIf shouldRemove
                 }
 
-            // Лямбды если включены
-            if (master.config.deleteJavaStyleLambdas) {
-                classNode.methods
-                    .removeIf {
-                        val info = MemberInfo(
-                            classNode.name,
-                            it.name,
-                            it.desc
-                        )
-
-                        modified = true
-                        return@removeIf info in javaStyleLambdaMethodsToRemove
-                    }
-            }
-
-            if (master.config.deleteKotlinStyleLambdas) {
-                classNode.methods
-                    .removeIf {
-                        val info = MemberInfo(
-                            classNode.name,
-                            it.name,
-                            it.desc
-                        )
-
-                        modified = true
-                        return@removeIf info in kotlinStyleLambdaMethodsToRemove
-                    }
-            }
-
             return@processAll if (modified)
                 ProcessAllAction.MODIFIED
             else
@@ -510,17 +471,25 @@ class FlagCuttingProcessor(
         val desc: String
     )
 
-    private fun isMethodGoingToExist(classNode: ClassNode, method: MethodNode): Boolean {
+    private fun isMethodGoingToExist(classNode: ClassNode, method: MethodNode, includeCallsiteRemoval: Boolean = true): Boolean {
         val info = MemberInfo(
             classNode.name,
             method.name,
             method.desc
         )
 
+        return isMethodMemberGoingToExist(info, includeCallsiteRemoval)
+    }
+
+    private fun isMethodMemberGoingToExist(
+        info: MemberInfo,
+        // Из валидации не нужно писать ошибки на RemoveAtCallsite методы
+        includeCallsiteRemoval: Boolean = true
+    ): Boolean {
         val removal = info in methodsToRemove
-                || info in methodsToRemoveAtCallsite
-                || info in javaStyleLambdaMethodsToRemove
-                || info in kotlinStyleLambdaMethodsToRemove
+                || (info in methodsToRemoveAtCallsite && includeCallsiteRemoval)
+                || (info in javaStyleLambdaMethodsToRemove && master.config.deleteJavaStyleLambdas)
+                || (info in kotlinStyleLambdaMethodsToRemove && master.config.deleteKotlinStyleLambdas)
 
         return !removal
     }
