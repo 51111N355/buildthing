@@ -181,16 +181,51 @@ plugin.sideTask("Server") {
 
 
 ### ShadowJar
-Чтобы применять адекватно после shadowJar - замените в sideTask после строки-стороны можно передать любой другой таск который будет браться за основу вместо "jar".
+Чтобы применять адекватно после shadowJar - укажите в в sideTask второй аргумент - таск с которого будет обработка. 
+
+Пример из реального проекта с разделением клиент/сервер:
+```groovy
+def buildthing = plugins.findPlugin(BuildThingPlugin)
+
+// Второй аргумент - shadowJar. Обработка buildThing будет проходить после того как shadowJar запаковал зависимости.
+buildthing.sideTask("Client", shadowJar) {
+    it.config.flags.add("client")
+}
+
+// Второй аргумент - shadowJar. Обработка buildThing будет проходить после того как shadowJar запаковал зависимости.
+buildthing.sideTask("Server", shadowJar) {
+    it.config.flags.add("server")
+}
+```
 
 ### Forge Reobf 1.7.10
 На самом деле применить Reobf Forge очень просто, добавляете записи как в примере ниже и билдить через `gradle reobf`
-```
+```groovy
 reobf.reobf(buildClient) { spec ->
     spec.classpath = sourceSets.main.compileClasspath
 }
 
 reobf.reobf(buildServer) { spec ->
     spec.classpath = sourceSets.main.compileClasspath
+}
+```
+
+### MANIFEST.MF
+Без дополнительной настройки MANIFEST.MF будет сбрасываться на тасках сборки BuildThing, но это легко исправить.
+
+Пример из реального проекта с разделением клиент/сервер:
+```groovy
+def buildthing = plugins.findPlugin(BuildThingPlugin)
+
+buildthing.sideTask("Client") {
+    // Будет браться манифест из того который вы могли настроить в jar { manifest { .. } } блоке (таска Jar) 
+    it.manifest = rootProject.tasks.jar.manifest
+    it.config.flags.add("client")
+}
+
+buildthing.sideTask("Server") {
+    // Будет браться манифест из того который вы могли настроить в jar { manifest { .. } } блоке (таска Jar)
+    it.manifest = rootProject.tasks.jar.manifest
+    it.config.flags.add("server")
 }
 ```
