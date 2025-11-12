@@ -2,6 +2,7 @@ package net.im51111n355.buildthing.processing.process
 
 import net.im51111n355.buildthing.processing.BuildThingProcessor
 import net.im51111n355.buildthing.processing.BuildThingProcessor.ProcessAllAction
+import net.im51111n355.buildthing.processing.IProcessingStep
 import net.im51111n355.buildthing.standard.FlagCuttable
 import net.im51111n355.buildthing.standard.RemoveAtCallsite
 import net.im51111n355.buildthing.util.getOptionalAnnotation
@@ -30,7 +31,7 @@ import org.objectweb.asm.tree.TypeInsnNode
 
 class FlagCuttingProcessor(
     val master: BuildThingProcessor
-) {
+): IProcessingStep {
     // Владелец Класс -> Его внутренний класс на удаление
     private val classesOwnedByClasses = mutableSetOf<Pair<String, String>>()
     // Владелец МЕТОД -> Внутренний класс на удаление
@@ -48,7 +49,7 @@ class FlagCuttingProcessor(
     // Поля на удаление
     private val fieldsToRemove = mutableSetOf<MemberInfo>()
 
-    fun process() {
+    override fun process() {
         // Скан удаляемых классов на outerClass / outerMethod+outerMethodDesc
         master.processAll { classNode ->
             val outerClass = classNode.outerClass

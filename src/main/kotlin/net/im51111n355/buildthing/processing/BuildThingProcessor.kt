@@ -24,11 +24,13 @@ class BuildThingProcessor(
     // Инстансы ClassNode на которых проходит новый processAll
     private val allClassNodes = mutableListOf<LoadedClassNode>()
 
-    private val injectRandomProcessor = InjectRandomProcessor(this)
-    private val injectFlagProcessor = InjectFlagProcessor(this)
-    private val injectValueProcessor = InjectValueProcessor(this)
-    private val flagCuttingProcessor = FlagCuttingProcessor(this)
-    private val removeAnnotationsProcessor = RemoveAnnotationsProcessor(this)
+    private val processors = listOf(
+        InjectRandomProcessor(this),
+        InjectFlagProcessor(this),
+        InjectValueProcessor(this),
+        FlagCuttingProcessor(this),
+        RemoveAnnotationsProcessor(this)
+    )
 
     fun process() {
         // Индекс - библиотеки
@@ -56,11 +58,8 @@ class BuildThingProcessor(
         }
 
         // Обработка
-        injectRandomProcessor.process()
-        injectFlagProcessor.process()
-        injectValueProcessor.process()
-        flagCuttingProcessor.process()
-        removeAnnotationsProcessor.process()
+        for (step in processors)
+            step.process()
 
         // Сохранить все оставшиеся ClassNode
         for (node in allClassNodes) {

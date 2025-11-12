@@ -2,6 +2,7 @@ package net.im51111n355.buildthing.processing.process
 
 import net.im51111n355.buildthing.processing.BuildThingProcessor
 import net.im51111n355.buildthing.processing.BuildThingProcessor.ProcessAllAction
+import net.im51111n355.buildthing.processing.IProcessingStep
 import net.im51111n355.buildthing.standard.InjectRandom
 import net.im51111n355.buildthing.util.getOptionalArgument
 import net.im51111n355.buildthing.util.type
@@ -11,8 +12,8 @@ import java.util.concurrent.ThreadLocalRandom
 
 class InjectRandomProcessor(
     val master: BuildThingProcessor
-) {
-    fun process() {
+): IProcessingStep {
+    override fun process() {
         val tIrInt = Type.getType(InjectRandom.Integer::class.java)
         val tIrFloat = Type.getType(InjectRandom.Float::class.java)
         val tIrLong = Type.getType(InjectRandom.Long::class.java)

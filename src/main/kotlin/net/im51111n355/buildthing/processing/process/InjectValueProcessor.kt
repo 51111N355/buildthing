@@ -2,6 +2,7 @@ package net.im51111n355.buildthing.processing.process
 
 import net.im51111n355.buildthing.processing.BuildThingProcessor
 import net.im51111n355.buildthing.processing.BuildThingProcessor.ProcessAllAction
+import net.im51111n355.buildthing.processing.IProcessingStep
 import net.im51111n355.buildthing.standard.InjectValue
 import net.im51111n355.buildthing.util.getOptionalArgument
 import net.im51111n355.buildthing.util.getRequiredArgument
@@ -14,8 +15,8 @@ import org.objectweb.asm.tree.InsnNode
 
 class InjectValueProcessor(
     val master: BuildThingProcessor
-) {
-    fun process() {
+): IProcessingStep {
+    override fun process() {
         val tIvInt = Type.getType(InjectValue.Integer::class.java)
         val tIvFloat = Type.getType(InjectValue.Float::class.java)
         val tIvLong = Type.getType(InjectValue.Long::class.java)

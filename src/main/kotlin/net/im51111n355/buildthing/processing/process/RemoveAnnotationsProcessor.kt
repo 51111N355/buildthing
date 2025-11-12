@@ -2,6 +2,7 @@ package net.im51111n355.buildthing.processing.process
 
 import net.im51111n355.buildthing.processing.BuildThingProcessor
 import net.im51111n355.buildthing.processing.BuildThingProcessor.ProcessAllAction
+import net.im51111n355.buildthing.processing.IProcessingStep
 import net.im51111n355.buildthing.standard.FlagCuttable
 import net.im51111n355.buildthing.standard.InjectRandom
 import net.im51111n355.buildthing.standard.RemoveAtCallsite
@@ -11,8 +12,8 @@ import org.objectweb.asm.tree.AnnotationNode
 
 class RemoveAnnotationsProcessor(
     val master: BuildThingProcessor
-) {
-    fun process() {
+): IProcessingStep {
+    override fun process() {
         master.processAll { classNode ->
             var modified = false
 

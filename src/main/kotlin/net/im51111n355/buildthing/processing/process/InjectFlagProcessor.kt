@@ -2,6 +2,7 @@ package net.im51111n355.buildthing.processing.process
 
 import net.im51111n355.buildthing.processing.BuildThingProcessor
 import net.im51111n355.buildthing.processing.BuildThingProcessor.ProcessAllAction
+import net.im51111n355.buildthing.processing.IProcessingStep
 import net.im51111n355.buildthing.standard.InjectFlag
 import net.im51111n355.buildthing.util.getRequiredArgument
 import net.im51111n355.buildthing.util.isStatic
@@ -13,8 +14,8 @@ import org.objectweb.asm.tree.InsnNode
 
 class InjectFlagProcessor(
     val master: BuildThingProcessor
-) {
-    fun process() {
+): IProcessingStep {
+    override fun process() {
         val tIf = Type.getType(InjectFlag::class.java)
 
         master.processAll { classNode ->
