@@ -6,6 +6,17 @@ import net.im51111n355.buildthing.processing.process.FlagCuttingProcessor
 import net.im51111n355.buildthing.processing.process.InjectFlagProcessor
 import net.im51111n355.buildthing.processing.process.InjectRandomProcessor
 import net.im51111n355.buildthing.processing.process.InjectValueProcessor
+import net.im51111n355.buildthing.processing.process.inject.value.InjectBooleanValueEvalProcessor
+import net.im51111n355.buildthing.processing.process.inject.value.InjectDoubleValueEvalProcessor
+import net.im51111n355.buildthing.processing.process.inject.InjectFlagEvalProcessor
+import net.im51111n355.buildthing.processing.process.inject.random.InjectDoubleRandomEvalProcessor
+import net.im51111n355.buildthing.processing.process.inject.random.InjectFloatRandomEvalProcessor
+import net.im51111n355.buildthing.processing.process.inject.random.InjectIntRandomEvalProcessor
+import net.im51111n355.buildthing.processing.process.inject.random.InjectLongRandomEvalProcessor
+import net.im51111n355.buildthing.processing.process.inject.value.InjectFloatValueEvalProcessor
+import net.im51111n355.buildthing.processing.process.inject.value.InjectIntValueEvalProcessor
+import net.im51111n355.buildthing.processing.process.inject.value.InjectLongValueEvalProcessor
+import net.im51111n355.buildthing.processing.process.inject.value.InjectStringValueEvalProcessor
 import net.im51111n355.buildthing.util.ClassPathIndex
 import net.im51111n355.buildthing.util.SafeCW
 import org.gradle.api.Project
@@ -29,7 +40,21 @@ class BuildThingProcessor(
         InjectFlagProcessor(this),
         InjectValueProcessor(this),
         FlagCuttingProcessor(this),
-        RemoveAnnotationsProcessor(this)
+
+        InjectFlagEvalProcessor(this),
+        InjectIntValueEvalProcessor(this),
+        InjectFloatValueEvalProcessor(this),
+        InjectLongValueEvalProcessor(this),
+        InjectDoubleValueEvalProcessor(this),
+        InjectStringValueEvalProcessor(this),
+        InjectBooleanValueEvalProcessor(this),
+
+        InjectIntRandomEvalProcessor(this),
+        InjectFloatRandomEvalProcessor(this),
+        InjectLongRandomEvalProcessor(this),
+        InjectDoubleRandomEvalProcessor(this),
+
+        RemoveAnnotationsProcessor(this),
     )
 
     fun process() {
@@ -52,7 +77,7 @@ class BuildThingProcessor(
             // Чтение
             val classNode = ClassNode()
             val classReader = ClassReader(file.readBytes())
-            classReader.accept(classNode, 0)
+            classReader.accept(classNode, ClassReader.SKIP_DEBUG) // <- Поддерживать Node'ы на всякие номера строк очень бесит на самом деле, так что пока что SKIP_DEBUG
 
             allClassNodes.add(LoadedClassNode(classNode, file, false))
         }

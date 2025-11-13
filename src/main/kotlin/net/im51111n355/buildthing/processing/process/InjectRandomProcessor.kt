@@ -83,6 +83,21 @@ class InjectRandomProcessor(
                 }
             }
 
+            if (modified) {
+                master.project.logger.error("==========================================================================================================================================================================================")
+                master.project.logger.error(" | Class \"${classNode.type.className}\" uses the @InjectRandom annotation which in the last version of BuildThing is deprecated, and is supposed to be replaced with Inject.randXxx calls.")
+                master.project.logger.error(" | Check out the latest documentation @ https://github.com/51111N355/buildthing for information on how to use the `Inject` class =)")
+                master.project.logger.error(" | For now this will still compile, but in a week or two @InjectRandom will be completely removed.")
+                master.project.logger.error("==========================================================================================================================================================================================")
+
+
+                master.project.logger.error("==========================================================================================================================================================================================")
+                master.project.logger.error(" | Класс \"${classNode.type.className}\" использует @InjectRandom аннотацию, что в последней версии BuildThing не рекомендуется, и нужно заменить на Inject.randXxx вызовы.")
+                master.project.logger.error(" | Посмотрите последнюю документацию на https://github.com/51111N355/buildthing для информации о том как использовать `Inject` класс =)")
+                master.project.logger.error(" | For now this will still compile, but in a week or two @InjectRandom will be completely removed.")
+                master.project.logger.error("==========================================================================================================================================================================================")
+            }
+
             return@processAll if (modified)
                 ProcessAllAction.MODIFIED
             else

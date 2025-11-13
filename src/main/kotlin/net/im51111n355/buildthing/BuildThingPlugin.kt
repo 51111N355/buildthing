@@ -5,7 +5,6 @@ import net.im51111n355.buildthing.util.sha256
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.dependencies
@@ -41,7 +40,9 @@ class BuildThingPlugin : Plugin<Project> {
         // FIXME: Я точно помню в 1.21 neoforge проекте с похожим кодом у Gradle плагина - были особенности...
         project.afterEvaluate {
             project.dependencies {
-                add("compileOnly", project.files(standardJar))
+                // FIXME: Если пользователи используют maven publish то я не знаю, не получится ли что standard добавится в pom.xml.
+                // FIXME: Может быть это не произойдет потому std - файл, но я не уверен, проверить бы.
+                add("implementation", project.files(standardJar))
             }
         }
     }

@@ -1,12 +1,24 @@
 package net.im51111n355.buildthing.standard;
 
+import net.im51111n355.buildthing.standard.etc.ReadMePlease;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * @deprecated Используйте `Inject.randXxx` методы.
+ */
+@ReadMePlease({
+    "[!READ ME!] Replace with Inject.randXxx calls",
+
+    "[!ПРОЧИТАЙ МЕНЯ!] Замените на Inject.randXxx вызовы"
+})
+@Deprecated
 public final class InjectRandom {
 
+    @Deprecated
     @Target(ElementType.FIELD)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface Integer {
@@ -14,6 +26,7 @@ public final class InjectRandom {
         int maxExclusive() default java.lang.Integer.MAX_VALUE;
     }
 
+    @Deprecated
     @Target(ElementType.FIELD)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface Float {
@@ -21,6 +34,7 @@ public final class InjectRandom {
         float max() default java.lang.Float.MAX_VALUE;
     }
 
+    @Deprecated
     @Target(ElementType.FIELD)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface Long {
@@ -28,6 +42,7 @@ public final class InjectRandom {
         long maxExclusive() default java.lang.Long.MAX_VALUE;
     }
 
+    @Deprecated
     @Target(ElementType.FIELD)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface Double {
