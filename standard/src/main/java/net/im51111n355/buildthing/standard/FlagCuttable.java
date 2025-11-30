@@ -1,5 +1,7 @@
 package net.im51111n355.buildthing.standard;
 
+import net.im51111n355.buildthing.standard.etc.ReadMePlease;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -10,5 +12,10 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface FlagCuttable {
     String value();
-    boolean isPresent() default false;
+
+    @ReadMePlease({
+        "This option will be removed in a future update! Replace with a @FlagCuttable to an opposite flag",
+        "Эта опция будет удалена в будущем обновлении! Замените на @FlagCuttable с противоположным флагом"
+    })
+    @Deprecated boolean isPresent() default false;
 }
