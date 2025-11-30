@@ -11,6 +11,22 @@
 3. @ClassList и Inject.classList для некоторых стилей разработки модов, Minetweaker/Crafttweaker интеграций без ручного прописыванния классов. (Вместе с п.1)
 4. Возможность использовать `if(Inject.flag("xxx")) { ... }` для вырезания. (Своя собственная dead code elimination?)
 5. Разобраться что такое extension'ы в Gradle чтобы можно было добавить `buildthing { ... }` блоки для настроек. Возможно сделать default флаги+значения для остальных Inject и FlagCuttable (Относится к п.1). Перенос `sideTask()` утилиты метода именно туда с переименованием.
+6. Возможность в зависимости от флагов перенаправлять методы на другой у этого же класса, с такой же сигнатурой. Через `native` чтобы не нужна была дефолт реализация метода. (Вместе с п.1)
+```java
+@FlagSubstitute(flag="server", target="substituteMe_server")
+@FlagSubstitute(flag="client", target="substituteMe_client")
+public native void substituteMe();
+
+@FlagCuttable("server")
+public void substituteMe_server() {
+    // ...
+}
+
+@FlagCuttable("client")
+public void substituteMe_client() {
+    // ...
+} 
+```
 
 ## Возможности
 
