@@ -3,9 +3,6 @@ package net.im51111n355.buildthing.processing
 import net.im51111n355.buildthing.config.BuildThingConfig
 import net.im51111n355.buildthing.processing.process.RemoveAnnotationsProcessor
 import net.im51111n355.buildthing.processing.process.FlagCuttingProcessor
-import net.im51111n355.buildthing.processing.process.InjectFlagProcessor
-import net.im51111n355.buildthing.processing.process.InjectRandomProcessor
-import net.im51111n355.buildthing.processing.process.InjectValueProcessor
 import net.im51111n355.buildthing.processing.process.inject.value.InjectBooleanValueEvalProcessor
 import net.im51111n355.buildthing.processing.process.inject.value.InjectDoubleValueEvalProcessor
 import net.im51111n355.buildthing.processing.process.inject.InjectFlagEvalProcessor
@@ -36,9 +33,6 @@ class BuildThingProcessor(
     private val allClassNodes = mutableListOf<LoadedClassNode>()
 
     private val processors = listOf(
-        InjectRandomProcessor(this),
-        InjectFlagProcessor(this),
-        InjectValueProcessor(this),
         FlagCuttingProcessor(this),
 
         InjectFlagEvalProcessor(this),

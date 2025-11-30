@@ -4,7 +4,6 @@ import net.im51111n355.buildthing.processing.BuildThingProcessor
 import net.im51111n355.buildthing.processing.BuildThingProcessor.ProcessAllAction
 import net.im51111n355.buildthing.processing.IProcessingStep
 import net.im51111n355.buildthing.standard.FlagCuttable
-import net.im51111n355.buildthing.standard.InjectRandom
 import net.im51111n355.buildthing.standard.RemoveAtCallsite
 import net.im51111n355.buildthing.util.type
 import org.objectweb.asm.Type
