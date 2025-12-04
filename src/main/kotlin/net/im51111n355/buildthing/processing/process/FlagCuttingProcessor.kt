@@ -50,6 +50,9 @@ class FlagCuttingProcessor(
     private val fieldsToRemove = mutableSetOf<MemberInfo>()
 
     override fun process() {
+        if (master.config.disableCutter)
+            return
+
         // Скан удаляемых классов на outerClass / outerMethod+outerMethodDesc
         master.processAll { classNode ->
             val outerClass = classNode.outerClass

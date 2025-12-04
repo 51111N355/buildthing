@@ -9,6 +9,10 @@ class BuildThingConfig : Serializable {
     // Значения для сборки
     val values = mutableMapOf<String, Any>()
 
+    // Полное отключение вырезалки. Не влияет на значения Inject.flag, но полностью пропускает этап вырезания @FlagCuttable.
+    // Задумано для использования самой BuildThing чтобы пропускать вырезание в classes.finalizedBy(...) этапе, но можно включить и для своих тасков.
+    var disableCutter = false
+
     // Удаление лямбда методов, которые в Java компилируются как private static synthetic, если этот метод вызывается только из метода который тоже будет удалён
     var deleteJavaStyleLambdas = true
 
