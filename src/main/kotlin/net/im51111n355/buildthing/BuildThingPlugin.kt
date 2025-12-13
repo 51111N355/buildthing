@@ -1,6 +1,6 @@
 package net.im51111n355.buildthing
 
-import net.im51111n355.buildthing.task.BuildThingTask
+import net.im51111n355.buildthing.task.build.BuildThingJarTask
 import net.im51111n355.buildthing.util.sha256
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
@@ -51,9 +51,9 @@ class BuildThingPlugin : Plugin<Project> {
     fun sideTask(
         name: String,
         fromTask: DefaultTask = project.tasks.named<Jar>("jar").get(),
-        configure: BuildThingTask.() -> Unit
+        configure: BuildThingJarTask.() -> Unit
     ) {
-        project.tasks.create<BuildThingTask>("build$name") {
+        project.tasks.create<BuildThingJarTask>("build$name") {
             description  = "Build $name"
             group = "buildthing build profile"
             archiveClassifier.set("[$name]")

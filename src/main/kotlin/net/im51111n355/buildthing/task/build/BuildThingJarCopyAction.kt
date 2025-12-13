@@ -1,4 +1,4 @@
-package net.im51111n355.buildthing.task
+package net.im51111n355.buildthing.task.build
 
 import net.im51111n355.buildthing.config.BuildThingConfig
 import net.im51111n355.buildthing.processing.BuildThingProcessor
@@ -10,7 +10,7 @@ import java.io.File
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
-class BuildThingCopyAction(
+class BuildThingJarCopyAction(
     val project: Project,
     val processIn: File,
     val targetFile: File,
