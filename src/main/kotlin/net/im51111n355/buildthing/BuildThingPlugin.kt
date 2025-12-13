@@ -18,11 +18,11 @@ class BuildThingPlugin : Plugin<Project> {
 
     override fun apply(project: Project) {
         this.project = project
-        injectStd(project)
+        injectStd()
     }
 
     // Добавляет standard.jar в зависимости, обрабатывает то что может быть несколько версий плагина с разными standard.jar (привязка к sha256)
-    private fun injectStd(project: Project) {
+    private fun injectStd() {
         val classLoader = javaClass.classLoader
 
         val bytes = classLoader.getResourceAsStream("standard.jar")!!
