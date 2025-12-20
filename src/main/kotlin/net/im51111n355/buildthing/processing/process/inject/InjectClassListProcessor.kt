@@ -26,7 +26,7 @@ class InjectClassListProcessor(
     override fun process() {
         // 1 - Индексация классов с нужной аннотацией @ClassList
         master.processAll { classNode ->
-            val annotation = classNode.visibleAnnotations.getOptionalAnnotation<ClassList>()
+            val annotation = classNode.visibleAnnotations?.getOptionalAnnotation<ClassList>()
                 ?: return@processAll ProcessAllAction.NOT_MODIFIED
 
             val keys = annotation.getRequiredArgument<List<String>>("value")
