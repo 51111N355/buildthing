@@ -461,8 +461,6 @@ class FlagCuttingProcessor(
         }
     }
 
-    private var hasBeenAnnoyingAlready = false
-
     private fun isCuttable(annotations: List<AnnotationNode>?): Boolean {
         if (annotations == null)
             return false
@@ -471,18 +469,7 @@ class FlagCuttingProcessor(
             ?: return false
 
         val flag = annotation.getRequiredArgument<String>("value")
-        val presenceToCut = annotation.getOptionalArgument<Boolean>("isPresent", false)
-
-        if (presenceToCut && !hasBeenAnnoyingAlready) {
-            hasBeenAnnoyingAlready = true
-
-            master.project.logger.error("==========================================================================================================================================|")
-            master.project.logger.error("| You are using \"isPresent\" in a @FlagCuttable annotation. This is a deprecated feature and will be removed in the future large update. |")
-            master.project.logger.error("| Вы используете \"isPresent\" в @FlagCuttable аннотации. Эта возможность не поддерживается и будет удалена в будущем большом обновлении. |")
-            master.project.logger.error("==========================================================================================================================================|")
-        }
-
-        return master.config.flags.contains(flag) == presenceToCut
+        return !master.config.flags.contains(flag)
     }
 
     private data class MemberInfo(
