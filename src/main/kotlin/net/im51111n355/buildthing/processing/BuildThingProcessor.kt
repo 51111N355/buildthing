@@ -24,7 +24,7 @@ import java.io.File
 
 class BuildThingProcessor(
     val project: Project,
-    val processIn: File,
+    val processIn: IProcessingSource,
     val config: BuildThingConfig
 ) {
     val index = ClassPathIndex(this)
@@ -57,7 +57,7 @@ class BuildThingProcessor(
             .files.forEach(index::index)
 
         // Индекс - классы самого проекта
-        for (file in processIn.walkTopDown()) {
+        for (file in processIn) {
             if (file.extension != "class") continue
 
             val bytes = file.readBytes()
@@ -65,7 +65,7 @@ class BuildThingProcessor(
         }
 
         // Загрузить все классы
-        for (file in processIn.walkTopDown()) {
+        for (file in processIn) {
             if (file.extension != "class") continue
 
             // Чтение
