@@ -9,10 +9,9 @@
 
 ## Запланированный функционал, изменения (Не известные сроки)
 1. @RemoveInsns вариант вместе с @FlagCuttable, чтобы вместо полного удаление метода - удалялось только его содержимое, а вызовы могли бы остаться
-2. @ClassList и Inject.classList для некоторых стилей разработки модов, Minetweaker/Crafttweaker интеграций без ручного прописыванния классов. (Вместе с п.1)
-3. Возможность использовать `if(Inject.flag("xxx")) { ... }` для вырезания. (Своя собственная dead code elimination?)
-4. Разобраться что такое extension'ы в Gradle чтобы можно было добавить `buildthing { ... }` блоки для настроек. Возможно сделать default флаги+значения для остальных Inject и FlagCuttable (Относится к п.1). Перенос `sideTask()` утилиты метода именно туда с переименованием.
-5. Возможность в зависимости от флагов перенаправлять методы на другой у этого же класса, с такой же сигнатурой. Через `native` чтобы не нужна была дефолт реализация метода. (Вместе с п.1)
+2. Возможность использовать `if(Inject.flag("xxx")) { ... }` для вырезания. (Своя собственная dead code elimination?)
+3. Разобраться что такое extension'ы в Gradle чтобы можно было добавить `buildthing { ... }` блоки для настроек. Возможно сделать default флаги+значения для остальных Inject и FlagCuttable (Относится к п.1). Перенос `sideTask()` утилиты метода именно туда с переименованием.
+4. Возможность в зависимости от флагов перенаправлять методы на другой у этого же класса, с такой же сигнатурой. Через `native` чтобы не нужна была дефолт реализация метода. (Вместе с п.1)
 ```java
 @FlagSubstitute(flag="server", target="substituteMe_server")
 @FlagSubstitute(flag="client", target="substituteMe_client")
@@ -28,7 +27,7 @@ public void substituteMe_client() {
     // ...
 } 
 ```
-6. Анти-флаги - Возможность указать `!<flag>` в `@FlagCuttable`, `Inject.flag`. Например `@FlagCuttable("!server")` как замена не документированному `isPresent`
+5. Анти-флаги - Возможность указать `!<flag>` в `@FlagCuttable`, `Inject.flag`. Например `@FlagCuttable("!server")` как замена не документированному `isPresent`
 
 ## Возможности
 
@@ -205,6 +204,24 @@ config.values.put("build_time", System.currentTimeMillis())
 ```java
 // Заменит значение BUILD_TIME во время сборки
 public static final long BUILD_TIME = Inject.longValue("build_time");
+```
+
+### Списки классов
+Есть аннотация `@ClassList` которая добавляет класс в список. Через вызов `Inject.classList(String)` вы можете получить список всех классов с указанным ключем.
+
+Полезно для автоматической регистрации Minetweaker классов. 
+
+```java
+import java.util.List;
+
+@ClassList("ClassListName")
+class MyClass {
+}
+
+public void someMethod() {
+    List<Class<?>> classes = Inject.classList("ClassListName");
+    // ...
+}
 ```
 
 ## Использование

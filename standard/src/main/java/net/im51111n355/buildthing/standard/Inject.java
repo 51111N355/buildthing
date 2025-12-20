@@ -2,6 +2,7 @@ package net.im51111n355.buildthing.standard;
 
 import net.im51111n355.buildthing.standard.etc.ReadMePlease;
 
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 // Всё что имеет поддержку Inject + runtime версии этих методов
@@ -16,6 +17,10 @@ import java.util.concurrent.ThreadLocalRandom;
     "Посмотрите документацию на https://github.com/51111N355/buildthing для получения дополнительной информации!!!"
 })
 public class Inject {
+    public static List<Class<?>> classList(String key) {
+        throw new AssertionError("This is not supposed to happen. Please see the documentation for \"processBeforeTask\".");
+    }
+
     public static boolean flag(String flag) {
         throw new AssertionError("This is not supposed to happen. Please see the documentation for \"processBeforeTask\".");
     }
