@@ -37,7 +37,7 @@ public void substituteMe_client() {
 
 Контроллируется настройкой `BuildThingConfig#disableCutter`, выключено по умолчанию.
 
-### Обработка для Dev Runtime
+### Обработка для Dev Runtime (Классы)
 Допустим у вас существует `JavaExec` таск для тестирования вашего приложения из среды разработки. Как же включить обработку BuildThing?
 
 ```kts
@@ -54,8 +54,6 @@ val runDev = tasks.create<JavaExec>("runDev") {
 
 Для этого добавлен метод плагина `processClassesBeforeTask`, который создает и настраивает таск для обработки папки `classes` до того как будет выполнен ваш `JavaExec` таск.
 
-Вместо создания своего runDev у вас может быть runClient от Forge, или подобные таски.
-
 К существующему коду из примера выше добавляем этот:
 
 ```kts
@@ -64,6 +62,22 @@ val runDev = tasks.create<JavaExec>("runDev") {
 plugin.processClassesBeforeTask("DevRuntime", runDev) {
     // Обязательно нужно указать чтобы обрабатывало ПОСЛЕ того как классы соберутся
     dependsOn("classes") 
+    // Дальше настройка как обычно
+    config.values.put("build_time", System.currentTimeMillis())
+}
+```
+
+### Обработка для Dev Runtime (Jar)
+Некоторые плагины, например ForgeGradle, запускают тестовый инстанс игры из .jar билда, не из папки classes. Для этого существует метод `processJarBeforeTask` похожий на processClassesBeforeTask:
+
+```kts
+// Пример как настроить processJarBeforeTask для forge runClient
+
+// "DevRuntime" - Уникальная строка для названия таска ("processInPlace$name")
+// "runClient" - Таск ДО которого будет выполняться обработка .jar
+plugin.processJarBeforeTask("DevRuntime", runClient) {
+    // В отличии от processClassesBeforeTask - указывать зависимость от classes не нужно.
+    
     // Дальше настройка как обычно
     config.values.put("build_time", System.currentTimeMillis())
 }

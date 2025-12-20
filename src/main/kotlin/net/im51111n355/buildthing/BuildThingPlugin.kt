@@ -6,6 +6,7 @@ import net.im51111n355.buildthing.util.sha256
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.dependencies
@@ -89,6 +90,33 @@ class BuildThingPlugin : Plugin<Project> {
 
             val sources = fromTask.inputs.files.files.toList()
             sourceDirectories.addAll(sources)
+
+            configure()
+        }
+    }
+
+    @JvmOverloads
+    fun processJarBeforeTask(
+        name: String,
+        beforeTask: DefaultTask,
+
+        fromTask: AbstractArchiveTask = project.tasks.named<Jar>("jar").get(),
+        configure: BuildThingJarTask.() -> Unit
+    ) {
+        project.tasks.create<BuildThingJarTask>("processJarInPlace$name") {
+            description = "Runs processing for development runtime"
+            group = "buildthing process in place"
+            // Обязательно полностью копирует название
+            archiveFileName.set(fromTask.archiveFileName.get())
+
+            dependsOn(fromTask)
+            beforeTask.dependsOn(this)
+
+            from(Callable {
+                fromTask
+                    .outputs.files
+                    .map { project.zipTree(it) }
+            })
 
             configure()
         }
