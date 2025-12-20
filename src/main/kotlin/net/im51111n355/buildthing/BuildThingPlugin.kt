@@ -1,6 +1,7 @@
 package net.im51111n355.buildthing
 
 import net.im51111n355.buildthing.task.build.BuildThingJarTask
+import net.im51111n355.buildthing.task.devruntime.BuildThingProcessInPlaceTask
 import net.im51111n355.buildthing.util.sha256
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
@@ -65,6 +66,29 @@ class BuildThingPlugin : Plugin<Project> {
                     .outputs.files
                     .map { project.zipTree(it) }
             })
+
+            configure()
+        }
+    }
+
+    @JvmOverloads
+    fun processBeforeTask(
+        name: String,
+        beforeTask: DefaultTask,
+
+        fromTask: DefaultTask = project.tasks.named<Jar>("jar").get(),
+        configure: BuildThingProcessInPlaceTask.() -> Unit
+    ) {
+        project.tasks.create<BuildThingProcessInPlaceTask>("processInPlace$name") {
+            description = "Runs processing for development runtime"
+            group = "buildthing process in place"
+
+            // Зависимости чтобы обязательно вызывался после вызова "beforetask" таска
+            // Тут же нужно чтобы вызывалося ПОСЛЕ classes, но это будет задават пользователь
+            beforeTask.dependsOn(this)
+
+            val sources = fromTask.inputs.files.files.toList()
+            sourceDirectories.addAll(sources)
 
             configure()
         }

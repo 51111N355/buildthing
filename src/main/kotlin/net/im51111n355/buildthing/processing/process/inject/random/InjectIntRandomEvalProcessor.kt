@@ -4,6 +4,7 @@ import net.im51111n355.buildthing.processing.BuildThingProcessor
 import net.im51111n355.buildthing.processing.common.AbstractBuildTimeEvalStep
 import net.im51111n355.buildthing.standard.Inject
 import org.objectweb.asm.tree.MethodInsnNode
+import java.util.concurrent.ThreadLocalRandom
 
 class InjectIntRandomEvalProcessor(
     master: BuildThingProcessor
@@ -17,6 +18,6 @@ class InjectIntRandomEvalProcessor(
             && min.name == "randInt"
 
     override fun makeReplacementCst(args: Array<Any?>): Any {
-        return Inject.randInt(args[0] as Int, args[1] as Int)
+        return ThreadLocalRandom.current().nextInt(args[0] as Int, args[1] as Int)
     }
 }

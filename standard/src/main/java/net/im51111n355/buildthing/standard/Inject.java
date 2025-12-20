@@ -17,78 +17,46 @@ import java.util.concurrent.ThreadLocalRandom;
 })
 public class Inject {
     public static boolean flag(String flag) {
-        return System.getProperties().containsKey(flag);
+        throw new AssertionError("This is not supposed to happen. Please see the documentation for \"processBeforeTask\".");
     }
 
     public static int intValue(String key) {
-        try {
-            return Integer.parseInt(System.getenv(key));
-        } catch (Exception e) {
-            return 0;
-        }
+        throw new AssertionError("This is not supposed to happen. Please see the documentation for \"processBeforeTask\".");
     }
 
     public static float floatValue(String key) {
-        try {
-            return Float.parseFloat(System.getenv(key));
-        } catch (Exception e) {
-            return 0F;
-        }
+        throw new AssertionError("This is not supposed to happen. Please see the documentation for \"processBeforeTask\".");
     }
 
     public static long longValue(String key) {
-        try {
-            return Long.parseLong(System.getenv(key));
-        } catch (Exception e) {
-            return 0L;
-        }
+        throw new AssertionError("This is not supposed to happen. Please see the documentation for \"processBeforeTask\".");
     }
 
     public static double doubleValue(String key) {
-        try {
-            return Double.parseDouble(System.getenv(key));
-        } catch (Exception e) {
-            return 0.0;
-        }
+        throw new AssertionError("This is not supposed to happen. Please see the documentation for \"processBeforeTask\".");
     }
 
     public static String stringValue(String key) {
-        try {
-            return System.getenv(key);
-        } catch (Exception e) {
-            return "";
-        }
+        throw new AssertionError("This is not supposed to happen. Please see the documentation for \"processBeforeTask\".");
     }
 
     public static boolean booleanValue(String key) {
-        try {
-            return Boolean.parseBoolean(System.getenv(key));
-        } catch (Exception e) {
-            return false;
-        }
+        throw new AssertionError("This is not supposed to happen. Please see the documentation for \"processBeforeTask\".");
     }
 
     public static int randInt(int minInclusive, int maxExclusive) {
-        return ThreadLocalRandom.current()
-            .nextInt(minInclusive, maxExclusive);
+        throw new AssertionError("This is not supposed to happen. Please see the documentation for \"processBeforeTask\".");
     }
 
     public static float randFloat(float min, float max) {
-        float d = max - min;
-        float r = ThreadLocalRandom.current().nextFloat();
-
-        return min + d * r;
+        throw new AssertionError("This is not supposed to happen. Please see the documentation for \"processBeforeTask\".");
     }
 
     public static long randLong(long minInclusive, long maxExclusive) {
-        return ThreadLocalRandom.current()
-            .nextLong(minInclusive, maxExclusive);
+        throw new AssertionError("This is not supposed to happen. Please see the documentation for \"processBeforeTask\".");
     }
 
     public static double randDouble(double min, double max) {
-        double d = max - min;
-        double r = ThreadLocalRandom.current().nextFloat();
-
-        return min + d * r;
+        throw new AssertionError("This is not supposed to happen. Please see the documentation for \"processBeforeTask\".");
     }
 }
