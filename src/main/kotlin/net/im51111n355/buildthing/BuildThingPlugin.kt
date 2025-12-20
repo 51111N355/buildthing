@@ -1,5 +1,7 @@
 package net.im51111n355.buildthing
 
+import net.im51111n355.buildthing.dsl.BuildThingGroovyDsl
+import net.im51111n355.buildthing.dsl.buildthing
 import net.im51111n355.buildthing.task.build.BuildThingJarTask
 import net.im51111n355.buildthing.task.devruntime.BuildThingProcessInPlaceTask
 import net.im51111n355.buildthing.util.sha256
@@ -20,7 +22,47 @@ class BuildThingPlugin : Plugin<Project> {
 
     override fun apply(project: Project) {
         this.project = project
+
         injectStd()
+        setupGroovyDsl()
+    }
+
+    private fun setupGroovyDsl() {
+        val extension = project.extensions.create("buildthing", BuildThingGroovyDsl::class.java)
+
+        project.afterEvaluate {
+            buildthing {
+                for (creation in extension.profiles) {
+                    val (name, from, configure) = creation
+
+                    if (from == null) {
+                        buildProfile(name, configure=configure::accept)
+                    } else {
+                        buildProfile(name, from, configure::accept)
+                    }
+                }
+
+                for (creation in extension.jarBeforeTask) {
+                    val (name, before, from, configure) = creation
+
+                    if (from == null) {
+                        processJarBeforeTask(name, before, configure=configure::accept)
+                    } else {
+                        processJarBeforeTask(name, before, from, configure::accept)
+                    }
+                }
+
+                for (creation in extension.classesBeforeTask) {
+                    val (name, before, from, configure) = creation
+
+                    if (from == null) {
+                        processClassesBeforeTask(name, before, configure=configure::accept)
+                    } else {
+                        processClassesBeforeTask(name, before, from, configure::accept)
+                    }
+                }
+            }
+        }
     }
 
     // Добавляет standard.jar в зависимости, обрабатывает то что может быть несколько версий плагина с разными standard.jar (привязка к sha256)
@@ -55,6 +97,9 @@ class BuildThingPlugin : Plugin<Project> {
         fromTask: DefaultTask = project.tasks.named<Jar>("jar").get(),
         configure: BuildThingJarTask.() -> Unit
     ) {
+        project.logger.error("!! You are using BuildThingPlugin#sideTask which is deprecated! Please use building { buildProfile(...) { ... } }. See docs for more info")
+        project.logger.error("!! Вы используете BuildThingPlugin#sideTask что не рекомендуется! Используйте { buildProfile(...) { ... } }. См. документацию за дополнительной информацией.")
+
         project.tasks.create<BuildThingJarTask>("build$name") {
             description  = "Build $name"
             group = "buildthing build profile"
@@ -80,18 +125,11 @@ class BuildThingPlugin : Plugin<Project> {
         fromTask: DefaultTask = project.tasks.named<Jar>("jar").get(),
         configure: BuildThingProcessInPlaceTask.() -> Unit
     ) {
-        project.tasks.create<BuildThingProcessInPlaceTask>("processInPlace$name") {
-            description = "Runs processing for development runtime"
-            group = "buildthing process in place"
+        project.logger.error("!! You are using BuildThingPlugin#processClassesBeforeTask which is deprecated! Please use building { processClassesBeforeTask(...) { ... } }. See docs for more info")
+        project.logger.error("!! Вы используете BuildThingPlugin#processClassesBeforeTask что не рекомендуется! Используйте { processClassesBeforeTask(...) { ... } }. См. документацию за дополнительной информацией.")
 
-            // Зависимости чтобы обязательно вызывался после вызова "beforetask" таска
-            // Тут же нужно чтобы вызывалося ПОСЛЕ classes, но это будет задават пользователь
-            beforeTask.dependsOn(this)
-
-            val sources = fromTask.inputs.files.files.toList()
-            sourceDirectories.addAll(sources)
-
-            configure()
+        project.buildthing {
+            processClassesBeforeTask(name, beforeTask, fromTask, configure)
         }
     }
 
@@ -103,22 +141,11 @@ class BuildThingPlugin : Plugin<Project> {
         fromTask: AbstractArchiveTask = project.tasks.named<Jar>("jar").get(),
         configure: BuildThingJarTask.() -> Unit
     ) {
-        project.tasks.create<BuildThingJarTask>("processJarInPlace$name") {
-            description = "Runs processing for development runtime"
-            group = "buildthing process in place"
-            // Обязательно полностью копирует название
-            archiveFileName.set(fromTask.archiveFileName.get())
+        project.logger.error("!! You are using BuildThingPlugin#processJarBeforeTask which is deprecated! Please use building { processJarBeforeTask(...) { ... } }. See docs for more info")
+        project.logger.error("!! Вы используете BuildThingPlugin#processJarBeforeTask что не рекомендуется! Используйте { processJarBeforeTask(...) { ... } }. См. документацию за дополнительной информацией.")
 
-            dependsOn(fromTask)
-            beforeTask.dependsOn(this)
-
-            from(Callable {
-                fromTask
-                    .outputs.files
-                    .map { project.zipTree(it) }
-            })
-
-            configure()
+        project.buildthing {
+            processJarBeforeTask(name, beforeTask, fromTask, configure)
         }
     }
 }

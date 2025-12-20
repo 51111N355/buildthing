@@ -5,7 +5,6 @@
 ## Запланированный функционал, изменения (Не известные сроки)
 1. @RemoveInsns вариант вместе с @FlagCuttable, чтобы вместо полного удаление метода - удалялось только его содержимое, а вызовы могли бы остаться
 2. Возможность использовать `if(Inject.flag("xxx")) { ... }` для вырезания. (Своя собственная dead code elimination?)
-3. Разобраться что такое extension'ы в Gradle чтобы можно было добавить `buildthing { ... }` блоки для настроек. Возможно сделать default флаги+значения для остальных Inject и FlagCuttable (Относится к п.1). Перенос `sideTask()` утилиты метода именно туда с переименованием.
 4. Возможность в зависимости от флагов перенаправлять методы на другой у этого же класса, с такой же сигнатурой. Через `native` чтобы не нужна была дефолт реализация метода. (Вместе с п.1)
 ```java
 @FlagSubstitute(flag="server", target="substituteMe_server")
@@ -26,10 +25,73 @@ public void substituteMe_client() {
 
 ## Возможности
 
-### Отключение вырезалки
-Можно создавать билды с выключенным функционалом вырезания, но работающими Inject.flag. 
+### Kotlin DSL
+Доступна Kotlin DSL для создания тасков и настройки плагина. 
 
-Контроллируется настройкой `BuildThingConfig#disableCutter`, выключено по умолчанию.
+Пример использования:
+
+```kts
+// Обязательно импортируем DSL пакет
+import net.im51111n355.buildthing.dsl.*
+
+buildthing {
+    // Создает Client профиль сборки
+    buildProfile("Client") {
+        // Настройки
+        config.flags.add("client")
+    }
+
+    // Создает Server профиль сборки
+    buildProfile("Server") {
+        // Настройки
+        config.flags.add("server")
+    }
+
+    // Настраивает чтобы перед runDev таском обрабатывались классы
+    processClassesBeforeTask("RunDev", runDev) {
+        dependsOn("classes")
+        config.values.put("some_value", 131313)
+    }
+    
+    // Также есть processJarBeforeTask (см. документацию ниже)
+}
+```
+
+### Groovy DSL
+Доступна, отдельная от котлин, groovy DSL для создания тасков и настройки плагина.
+
+Пример использования:
+
+```groovy
+// Импортировать ничего не надо =)
+buildthing {
+    // Создает Client профиль сборки
+    buildProfile("Client", shadowJar) {
+        // Настройки
+        config.flags.add("client")
+    }
+
+    // Создает Server профиль сборки
+    buildProfile("Server", shadowJar) {
+        // Настройки
+    }
+
+    // Настраивает чтобы перед runClient таском обрабатывался jar
+    // В отличии от kotlin DSL нужно указывать 3й параметр null !!
+    processJarBeforeTask("DevRunClient", runClient, null) {
+        config.values.put("some_value", 131313)
+    }
+
+    // Также есть processClassesBeforeTask (см. документацию ниже)
+}
+```
+
+### Отключение вырезалки
+Можно создавать билды с выключенным функционалом вырезания, но работающими Inject.flag (И всем остальным функционалом).
+
+Используется самой вырезалкой.
+
+Контроллируется настройкой `BuildThingConfig#disableCutter`, выключено по умолчанию. Исключения - `processJarBeforeTask`/`processClassesBeforeTask` таски, где эта настройка включена по умолчанию.
 
 ### Обработка для Dev Runtime (Классы)
 Допустим у вас существует `JavaExec` таск для тестирования вашего приложения из среды разработки. Как же включить обработку BuildThing?
@@ -46,30 +108,36 @@ val runDev = tasks.create<JavaExec>("runDev") {
 // Как же включить обработку BuildThing?
 ```
 
-Для этого добавлен метод плагина `processClassesBeforeTask`, который создает и настраивает таск для обработки папки `classes` до того как будет выполнен ваш `JavaExec` таск.
+Для этого добавлен метод `processClassesBeforeTask`, который создает и настраивает таск для обработки папки `classes` до того как будет выполнен ваш `JavaExec` таск.
 
 К существующему коду из примера выше добавляем этот:
 
 ```kts
-// "DevRuntime" - Уникальная строка для названия таска ("processInPlace$name")
-// "runDev" - Таск ДО которого будет выполняться обработка
-plugin.processClassesBeforeTask("DevRuntime", runDev) {
-    // Обязательно нужно указать чтобы обрабатывало ПОСЛЕ того как классы соберутся
-    dependsOn("classes") 
-    // Дальше настройка как обычно
-    config.values.put("build_time", System.currentTimeMillis())
+buildthing {
+    // "DevRuntime" - Уникальная строка для названия таска ("processInPlace$name")
+    // "runDev" - Таск ДО которого будет выполняться обработка
+    processClassesBeforeTask("DevRuntime", runDev) {
+        // Обязательно нужно указать чтобы обрабатывало ПОСЛЕ того как классы соберутся
+        dependsOn("classes")
+        // Дальше настройка как обычно
+        config.values.put("build_time", System.currentTimeMillis())
+    }
 }
 ```
 
+> ⚠️ По умолчанию "processClassesBeforeTask" создает таск с выключенной вырезалкой (Опция конфигурации `buildThingConfig.disableCutter = true`), но это можно выключить вручную.
+
 ### Обработка для Dev Runtime (Jar)
-Некоторые плагины, например ForgeGradle, запускают тестовый инстанс игры из .jar билда, не из папки classes. Для этого существует метод `processJarBeforeTask` похожий на processClassesBeforeTask:
+Некоторые плагины, например ForgeGradle, запускают тестовый инстанс игры из .jar билда, а не из папки classes. 
+
+Для обхода этого существует метод `processJarBeforeTask` похожий на processClassesBeforeTask:
 
 ```kts
 // Пример как настроить processJarBeforeTask для forge runClient
 
 // "DevRuntime" - Уникальная строка для названия таска ("processInPlace$name")
 // "runClient" - Таск ДО которого будет выполняться обработка .jar
-plugin.processJarBeforeTask("DevRuntime", runClient) {
+processJarBeforeTask("DevRuntime", runClient) {
     // В отличии от processClassesBeforeTask - указывать зависимость от classes не нужно.
     
     // Дальше настройка как обычно
@@ -77,7 +145,7 @@ plugin.processJarBeforeTask("DevRuntime", runClient) {
 }
 ```
 
-> ⚠️ По умолчанию "processClassesBeforeTask" создает таск с выключенной вырезалкой (Опция конфигурации `buildThingConfig.disableCutter = true`), но это можно выключить вручную.
+> ⚠️ По умолчанию "processJarBeforeTask" создает таск с выключенной вырезалкой (Опция конфигурации `buildThingConfig.disableCutter = true`), но это можно выключить вручную.
 
 ### Инжекторы
 Класс `Inject` с некоторыми полезными методами. Во время сборки все ваши вызовы в эти методы будут заменены на значения определённые во время сборки.
@@ -249,32 +317,17 @@ buildscript {
 apply plugin: "net.im51111n355.buildthing"
 ```
 
-После применения плагина нужно создать таски для своих настроек сборки, например в KTS:
+После применения плагина нужно создать таски для своих настроек сборки, например:
 
 ```kts
-val plugin = plugins.findPlugin(BuildThingPlugin::class.java)!!
+buildthing {
+    buildProfile("Client") {
+        config.flags.add("client")
+    }
 
-plugin.sideTask("Client") {
-    config.flags.add("client")
-}
-
-plugin.sideTask("Server") {
-    config.flags.add("server")
-}
-```
-
-Или в groovy
-
-```groovy
-import net.im51111n355.buildthing.BuildThingPlugin
-def plugin = plugins.findPlugin(BuildThingPlugin)
-
-plugin.sideTask("Client") {
-    it.config.flags.add("client")
-}
-
-plugin.sideTask("Server") {
-    it.config.flags.add("server")
+    buildProfile("Server") {
+        config.flags.add("server")
+    }
 }
 ```
 
@@ -288,32 +341,52 @@ plugin.sideTask("Server") {
 
 
 ### ShadowJar
-Чтобы применять адекватно после shadowJar - укажите в в sideTask второй аргумент - таск с которого будет обработка. 
+Чтобы применять адекватно после shadowJar - укажите в в buildthing второй аргумент - таск с которого будет обработка. 
 
 Пример из реального проекта с разделением клиент/сервер:
-```groovy
-def buildthing = plugins.findPlugin(BuildThingPlugin)
+```kts
+buildthing {
+    buildProfile("Client", shadowJar) {
+        config.flags.add("client")
+    }
 
-// Второй аргумент - shadowJar. Обработка buildThing будет проходить после того как shadowJar запаковал зависимости.
-buildthing.sideTask("Client", shadowJar) {
-    it.config.flags.add("client")
-}
-
-// Второй аргумент - shadowJar. Обработка buildThing будет проходить после того как shadowJar запаковал зависимости.
-buildthing.sideTask("Server", shadowJar) {
-    it.config.flags.add("server")
+    buildProfile("Server", shadowJar) {
+        config.flags.add("server")
+    }
 }
 ```
 
 ### Forge Reobf 1.7.10
-На самом деле применить Reobf Forge очень просто, добавляете записи как в примере ниже и билдить через `gradle build`
+Применить Reobf Forge очень просто, добавляете записи как в примере ниже и билдить через `gradle build`
 ```groovy
-reobf.reobf(buildClient) { spec ->
-    spec.classpath = sourceSets.main.compileClasspath
-}
+buildthing {
+    buildProfile("Client", shadowJar) {
+        config.flags.add("client")
 
-reobf.reobf(buildServer) { spec ->
-    spec.classpath = sourceSets.main.compileClasspath
+        // ЭТО включает forge reobf
+        reobf.reobf(buildClient) { spec ->
+            spec.classpath = sourceSets.main.compileClasspath
+        }
+    }
+
+    buildProfile("Server", shadowJar) {
+        config.flags.add("server")
+
+        // ЭТО включает forge reobf
+        reobf.reobf(buildServer) { spec ->
+            spec.classpath = sourceSets.main.compileClasspath
+        }
+    }
+}
+```
+
+### Forge runClient 1.7.10
+Применять BT обработку во время runClient/runServer тасков очень просто.
+```groovy
+buildthing {
+    processJarBeforeTask("DevRunClient", runClient/*, null - null нужен в Groovy DSL, но не нужен в Kotlin DSL*/) {
+        config.values.put("some_value", 25)
+    }
 }
 ```
 
@@ -322,17 +395,15 @@ reobf.reobf(buildServer) { spec ->
 
 Пример из реального проекта с разделением клиент/сервер:
 ```groovy
-def buildthing = plugins.findPlugin(BuildThingPlugin)
+buildthing {
+    buildProfile("Client", shadowJar) {
+        manifest = rootProject.tasks.jar.manifest
+        config.flags.add("client")
+    }
 
-buildthing.sideTask("Client") {
-    // Будет браться манифест из того который вы могли настроить в jar { manifest { .. } } блоке (таска Jar) 
-    it.manifest = rootProject.tasks.jar.manifest
-    it.config.flags.add("client")
-}
-
-buildthing.sideTask("Server") {
-    // Будет браться манифест из того который вы могли настроить в jar { manifest { .. } } блоке (таска Jar)
-    it.manifest = rootProject.tasks.jar.manifest
-    it.config.flags.add("server")
+    buildProfile("Server", shadowJar) {
+        manifest = rootProject.tasks.jar.manifest
+        config.flags.add("server")
+    }
 }
 ```
