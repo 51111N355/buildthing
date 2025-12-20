@@ -72,7 +72,7 @@ class BuildThingPlugin : Plugin<Project> {
     }
 
     @JvmOverloads
-    fun processBeforeTask(
+    fun processClassesBeforeTask(
         name: String,
         beforeTask: DefaultTask,
 

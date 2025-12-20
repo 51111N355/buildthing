@@ -52,7 +52,7 @@ val runDev = tasks.create<JavaExec>("runDev") {
 // Как же включить обработку BuildThing?
 ```
 
-Для этого добавлен метод плагина "processBeforeTask", который создает и настраивает таск для обработки папки `classes` до того как будет выполнен ваш `JavaExec` таск.
+Для этого добавлен метод плагина `processClassesBeforeTask`, который создает и настраивает таск для обработки папки `classes` до того как будет выполнен ваш `JavaExec` таск.
 
 Вместо создания своего runDev у вас может быть runClient от Forge, или подобные таски.
 
@@ -61,7 +61,7 @@ val runDev = tasks.create<JavaExec>("runDev") {
 ```kts
 // "DevRuntime" - Уникальная строка для названия таска ("processInPlace$name")
 // "runDev" - Таск ДО которого будет выполняться обработка
-plugin.processBeforeTask("DevRuntime", runDev) {
+plugin.processClassesBeforeTask("DevRuntime", runDev) {
     // Обязательно нужно указать чтобы обрабатывало ПОСЛЕ того как классы соберутся
     dependsOn("classes") 
     // Дальше настройка как обычно
@@ -69,14 +69,14 @@ plugin.processBeforeTask("DevRuntime", runDev) {
 }
 ```
 
-> ⚠️ По умолчанию "processBeforeTask" создает таск с выключенной вырезалкой (Опция конфигурации `buildThingConfig.disableCutter = true`), но это можно выключить вручную.
+> ⚠️ По умолчанию "processClassesBeforeTask" создает таск с выключенной вырезалкой (Опция конфигурации `buildThingConfig.disableCutter = true`), но это можно выключить вручную.
 
 ### Инжекторы
 Класс `Inject` с некоторыми полезными методами. Во время сборки все ваши вызовы в эти методы будут заменены на значения определённые во время сборки.
 
 > После обработки BuildThing ВСЕ вызовы на методы `Inject` класса заменяются на значения определённые во время сборки.
 
-> ⚠️ Для работы Inject класса в разработке (в Runtime) настройте "processBeforeTask" на свой JavaExec класс который вы используете.
+> ⚠️ Для работы Inject класса в разработке (в Runtime) настройте "processClassesBeforeTask" на свой JavaExec класс который вы используете.
 
 > ⚠️ В Inject методы можно передавать только константы.
 
