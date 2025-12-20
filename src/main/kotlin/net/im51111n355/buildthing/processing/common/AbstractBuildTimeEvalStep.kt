@@ -3,6 +3,7 @@ package net.im51111n355.buildthing.processing.common
 import net.im51111n355.buildthing.processing.BuildThingProcessor
 import net.im51111n355.buildthing.processing.BuildThingProcessor.ProcessAllAction
 import net.im51111n355.buildthing.processing.IProcessingStep
+import net.im51111n355.buildthing.util.getConstantPushedValue
 import net.im51111n355.buildthing.util.type
 import org.gradle.api.GradleException
 import org.objectweb.asm.Opcodes
@@ -69,7 +70,7 @@ abstract class AbstractBuildTimeEvalStep(
                         val expectedType = expectedTypes[expectedTypes.size - n - 1]
                         val expectedLdc = i - (n + 1)
                         val hopefullyLdc = it.instructions[expectedLdc]
-                        val value = getConstantPushedValue(hopefullyLdc)
+                        val value = hopefullyLdc.getConstantPushedValue()
 
                         if (value == null) {
                             errors = true
@@ -99,7 +100,7 @@ abstract class AbstractBuildTimeEvalStep(
                         val expectedLdc = i - (n + 1)
                         val hopefullyLdc = it.instructions[expectedLdc]
 
-                        val value = getConstantPushedValue(hopefullyLdc)
+                        val value = hopefullyLdc.getConstantPushedValue()
                             ?: throw AssertionError()
 
                         if (!isCompatibleType(expectedType, value.t))
@@ -126,44 +127,6 @@ abstract class AbstractBuildTimeEvalStep(
 
         if (errors)
             throw GradleException("Build Time evaluation step errors were found!")
-    }
-
-    // Поддержка iconst_x, ldc, и подобных инструкций
-    private fun getConstantPushedValue(insn: AbstractInsnNode): Box<out Any?>? {
-        val v = when (insn) {
-            is LdcInsnNode -> Box(insn.cst)
-            is InsnNode -> when (insn.opcode) {
-                Opcodes.ACONST_NULL -> Box(null)
-
-                Opcodes.ICONST_0 -> Box(0)
-                Opcodes.ICONST_1 -> Box(1)
-                Opcodes.ICONST_2 -> Box(2)
-                Opcodes.ICONST_3 -> Box(3)
-                Opcodes.ICONST_4 -> Box(4)
-                Opcodes.ICONST_5 -> Box(5)
-
-                Opcodes.LCONST_0 -> Box(0L)
-                Opcodes.LCONST_1 -> Box(1L)
-
-                Opcodes.FCONST_0 -> Box(0F)
-                Opcodes.FCONST_1 -> Box(1F)
-                Opcodes.FCONST_2 -> Box(2F)
-
-                Opcodes.DCONST_0 -> Box(0.0)
-                Opcodes.DCONST_1 -> Box(1.0)
-
-                else -> null
-            }
-            is IntInsnNode -> when (insn.opcode) {
-                Opcodes.BIPUSH -> Box(insn.operand.toByte())
-                Opcodes.SIPUSH -> Box(insn.operand.toShort())
-
-                else -> null
-            }
-            else -> null
-        }
-
-        return v
     }
 
     private fun isAllowedTargetMethodType(type: Type): Boolean {
@@ -223,8 +186,4 @@ abstract class AbstractBuildTimeEvalStep(
             else -> throw AssertionError("Expected \"expected\" not to be an object!")
         }
     }
-
-    data class Box<T>(
-        val t: T
-    )
 }

@@ -2,9 +2,13 @@ package net.im51111n355.buildthing.util
 
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Type
+import org.objectweb.asm.tree.AbstractInsnNode
 import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FieldNode
+import org.objectweb.asm.tree.InsnNode
+import org.objectweb.asm.tree.IntInsnNode
+import org.objectweb.asm.tree.LdcInsnNode
 import org.objectweb.asm.tree.MethodNode
 
 val ClassNode.type: Type
@@ -67,4 +71,41 @@ inline fun <reified T> List<AnnotationNode>.getOptionalAnnotation(): AnnotationN
     }
 
     return null
+}
+
+fun AbstractInsnNode.getConstantPushedValue(): Box<out Any?>? {
+    val v = when (this) {
+        is LdcInsnNode -> Box(this.cst)
+        is InsnNode -> when (this.opcode) {
+            Opcodes.ACONST_NULL -> Box(null)
+
+            Opcodes.ICONST_0 -> Box(0)
+            Opcodes.ICONST_1 -> Box(1)
+            Opcodes.ICONST_2 -> Box(2)
+            Opcodes.ICONST_3 -> Box(3)
+            Opcodes.ICONST_4 -> Box(4)
+            Opcodes.ICONST_5 -> Box(5)
+
+            Opcodes.LCONST_0 -> Box(0L)
+            Opcodes.LCONST_1 -> Box(1L)
+
+            Opcodes.FCONST_0 -> Box(0F)
+            Opcodes.FCONST_1 -> Box(1F)
+            Opcodes.FCONST_2 -> Box(2F)
+
+            Opcodes.DCONST_0 -> Box(0.0)
+            Opcodes.DCONST_1 -> Box(1.0)
+
+            else -> null
+        }
+        is IntInsnNode -> when (this.opcode) {
+            Opcodes.BIPUSH -> Box(this.operand.toByte())
+            Opcodes.SIPUSH -> Box(this.operand.toShort())
+
+            else -> null
+        }
+        else -> null
+    }
+
+    return v
 }
