@@ -81,13 +81,8 @@ class BuildThingPlugin : Plugin<Project> {
         if (!standardJar.exists())
             standardJar.writeBytes(bytes)
 
-        // FIXME: Я точно помню в 1.21 neoforge проекте с похожим кодом у Gradle плагина - были особенности...
-        project.afterEvaluate {
-            project.dependencies {
-                // FIXME: Если пользователи используют maven publish то я не знаю, не получится ли что standard добавится в pom.xml.
-                // FIXME: Может быть это не произойдет потому std - файл, но я не уверен, проверить бы.
-                add("implementation", project.files(standardJar))
-            }
+        project.dependencies {
+            add("implementation", project.files(standardJar))
         }
     }
 
