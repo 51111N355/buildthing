@@ -1,9 +1,8 @@
 package net.im51111n355.buildthing.dsl
 
-import net.im51111n355.buildthing.config.BuildThingConfig
 import net.im51111n355.buildthing.task.build.BuildThingJarTask
 import net.im51111n355.buildthing.task.devruntime.BuildThingProcessInPlaceTask
-import org.gradle.api.DefaultTask
+import org.gradle.api.Task
 import org.gradle.api.Project
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.api.tasks.bundling.Jar
@@ -17,7 +16,7 @@ class BuildThingConfiguration(
     fun buildProfile(
         name: String,
 
-        fromTask: DefaultTask = project.tasks.named<Jar>("jar").get(),
+        fromTask: Task = project.tasks.named<Jar>("jar").get(),
         configure: BuildThingJarTask.() -> Unit
     ) {
         project.tasks.create<BuildThingJarTask>("build$name") {
@@ -39,9 +38,9 @@ class BuildThingConfiguration(
 
     fun processClassesBeforeTask(
         name: String,
-        beforeTask: DefaultTask,
+        beforeTask: Task,
 
-        fromTask: DefaultTask = project.tasks.named<Jar>("jar").get(),
+        fromTask: Task = project.tasks.named<Jar>("jar").get(),
         configure: BuildThingProcessInPlaceTask.() -> Unit
     ) {
         project.tasks.create<BuildThingProcessInPlaceTask>("processInPlace$name") {
@@ -61,7 +60,7 @@ class BuildThingConfiguration(
 
     fun processJarBeforeTask(
         name: String,
-        beforeTask: DefaultTask,
+        beforeTask: Task,
 
         fromTask: AbstractArchiveTask = project.tasks.named<Jar>("jar").get(),
         configure: BuildThingJarTask.() -> Unit

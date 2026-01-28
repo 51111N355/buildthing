@@ -5,7 +5,7 @@ import net.im51111n355.buildthing.config.BuildThingConfig
 import net.im51111n355.buildthing.task.build.BuildThingJarTask
 import net.im51111n355.buildthing.task.devruntime.BuildThingProcessInPlaceTask
 import org.gradle.api.Action
-import org.gradle.api.DefaultTask
+import org.gradle.api.Task
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import java.util.function.Consumer
@@ -18,7 +18,7 @@ abstract class BuildThingGroovyDsl(objects: ObjectFactory) {
     @JvmOverloads
     fun buildProfile(
         name: String,
-        fromTask: DefaultTask? = null,
+        fromTask: Task? = null,
         configure: Action<BuildThingJarTask>? = null
     ) {
         profiles.add(BuildProfileCreation(
@@ -32,9 +32,9 @@ abstract class BuildThingGroovyDsl(objects: ObjectFactory) {
     @JvmOverloads
     fun processClassesBeforeTask(
         name: String,
-        beforeTask: DefaultTask,
+        beforeTask: Task,
 
-        fromTask: DefaultTask?,
+        fromTask: Task?,
         configure: Action<BuildThingProcessInPlaceTask>? = null
     ) {
         classesBeforeTask.add(ClassesBeforeTaskCreation(
@@ -49,7 +49,7 @@ abstract class BuildThingGroovyDsl(objects: ObjectFactory) {
     @JvmOverloads
     fun processJarBeforeTask(
         name: String,
-        beforeTask: DefaultTask,
+        beforeTask: Task,
 
         fromTask: AbstractArchiveTask?,
         configure: Action<BuildThingJarTask>? = null
@@ -65,20 +65,20 @@ abstract class BuildThingGroovyDsl(objects: ObjectFactory) {
 
     internal data class BuildProfileCreation(
         val name: String,
-        val fromTask: DefaultTask?,
+        val fromTask: Task?,
         val configure: Consumer<BuildThingJarTask>
     )
 
     internal data class ClassesBeforeTaskCreation(
         val name: String,
-        val beforeTask: DefaultTask,
-        val fromTask: DefaultTask?,
+        val beforeTask: Task,
+        val fromTask: Task?,
         val configure: Consumer<BuildThingProcessInPlaceTask>
     )
 
     internal data class JarBeforeTaskCreation(
         val name: String,
-        val beforeTask: DefaultTask,
+        val beforeTask: Task,
         val fromTask: AbstractArchiveTask?,
         val configure: Consumer<BuildThingJarTask>
     )
