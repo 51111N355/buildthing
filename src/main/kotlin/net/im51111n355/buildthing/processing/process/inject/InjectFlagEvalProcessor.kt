@@ -2,6 +2,7 @@ package net.im51111n355.buildthing.processing.process.inject
 
 import net.im51111n355.buildthing.processing.BuildThingProcessor
 import net.im51111n355.buildthing.processing.common.AbstractBuildTimeEvalStep
+import net.im51111n355.buildthing.util.FlagExpressionEval
 import org.objectweb.asm.tree.MethodInsnNode
 
 class InjectFlagEvalProcessor(
@@ -16,8 +17,10 @@ class InjectFlagEvalProcessor(
 
     override fun makeReplacementCst(args: Array<Any?>): Any {
         val flag = args[0] as String
-        val present = flag in master.config.flags
+        val value = FlagExpressionEval.eval(flag) {
+            it in master.config.flags
+        }
 
-        return present
+        return value
     }
 }

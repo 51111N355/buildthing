@@ -5,6 +5,7 @@ import net.im51111n355.buildthing.processing.BuildThingProcessor.ProcessAllActio
 import net.im51111n355.buildthing.processing.IProcessingStep
 import net.im51111n355.buildthing.standard.FlagCuttable
 import net.im51111n355.buildthing.standard.RemoveAtCallsite
+import net.im51111n355.buildthing.util.FlagExpressionEval
 import net.im51111n355.buildthing.util.getOptionalAnnotation
 import net.im51111n355.buildthing.util.getOptionalArgument
 import net.im51111n355.buildthing.util.getRequiredArgument
@@ -469,7 +470,11 @@ class FlagCuttingProcessor(
             ?: return false
 
         val flag = annotation.getRequiredArgument<String>("value")
-        return !master.config.flags.contains(flag)
+        val value = FlagExpressionEval.eval(flag) {
+            it in master.config.flags
+        }
+
+        return !value // <- value - есть ли флаг, а удаление если флага нет !!!
     }
 
     private data class MemberInfo(

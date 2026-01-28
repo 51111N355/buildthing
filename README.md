@@ -21,7 +21,6 @@ public void substituteMe_client() {
     // ...
 } 
 ```
-5. Анти-флаги - Возможность указать `!<flag>` в `@FlagCuttable`, `Inject.flag`. Например `@FlagCuttable("!server")` как замена не документированному `isPresent`
 
 ## Возможности
 
@@ -188,11 +187,26 @@ config.flags.add("debugging")
 // И так далее...
 ```
 
-Дальше в Java/Kotlin коде вы можете отметить методы/поля/классы аннотацией @FlagCuttable
+Дальше в Java/Kotlin коде вы можете отметить методы/поля/классы аннотацией @FlagCuttable. Указываемый аргумент - выражение, при значении `true` которого - метод/поле/класс кода нужно оставлять.
+
+В последней версии BuildThing поддерживается указание не просто названия флага, но и именно выражений с `!`, `&&`, `||` и скобками.
 ```java
 // Этот метод будет удален при сборке если нет флага "server" в конфиге при сборке.
+// - Метод будет оставлен если есть флаг "server".
 @FlagCuttable("server")
 void someServerFunction() {
+    // ...
+}
+
+// Этот метод будет оставлен если нет флага "server" 
+@FlagCuttable("!server")
+void someNotServerFunction() {
+    // ...
+}
+
+// Этот метод будет оставлен если есть флаг "server" И/ИЛИ если есть флаг "keepSomeFunction"
+@FlagCuttable("server || keepSomeFunction")
+void someFunction() {
     // ...
 }
 ```
@@ -231,7 +245,7 @@ void mixedSideCode() {
 > 
 > В использовании как в примере - static + единственный параметр это Runnable (Может быть любой `FunctionalInterface`) - удаление лямбды гарантируется.
 
-Дополнительно есть инжектор `Inject.flag(String)`
+Дополнительно есть инжектор `Inject.flag(String)`, который как и аннотация - поддерживает выражения.
 
 ```java
 public static final boolean IS_SERVER = Inject.flag("String");
