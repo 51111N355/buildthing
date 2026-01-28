@@ -10,7 +10,7 @@ open class BuildThingJarTask : Jar() {
     val config: BuildThingConfig = BuildThingConfig()
 
     override fun createCopyAction(): CopyAction {
-        val processingDirectory = project.buildDir.resolve("buildthing-jar-processing")
+        val processingDirectory = project.buildDir.resolve("buildthing-processing/$name") // <- Кое что связанное с переработкой dev runtime ситуаций
         processingDirectory.deleteRecursively()
         processingDirectory.mkdirs()
 
