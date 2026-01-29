@@ -1,16 +1,17 @@
 package net.im51111n355.buildthing.task.build
 
 import net.im51111n355.buildthing.config.BuildThingConfig
+import net.im51111n355.buildthing.task.IBuildThingTask
 import org.gradle.api.internal.file.copy.CopyAction
 import org.gradle.api.tasks.Input
 import org.gradle.jvm.tasks.Jar
 
-open class BuildThingJarTask : Jar() {
+open class BuildThingJarTask : Jar(), IBuildThingTask {
     @get:Input
-    val config: BuildThingConfig = BuildThingConfig()
+    override val config: BuildThingConfig = BuildThingConfig()
 
     override fun createCopyAction(): CopyAction {
-        val processingDirectory = project.buildDir.resolve("buildthing-processing/$name") // <- Кое что связанное с переработкой dev runtime ситуаций
+        val processingDirectory = project.buildDir.resolve(processingDirectory)
         processingDirectory.deleteRecursively()
         processingDirectory.mkdirs()
 

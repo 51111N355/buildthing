@@ -61,6 +61,26 @@ class BuildThingPlugin : Plugin<Project> {
                         processClassesBeforeTask(name, before, from, configure::accept)
                     }
                 }
+
+                for (creation in extension.jarJavaExecs) {
+                    val (name, before, archive, configure) = creation
+
+                    if (archive == null) {
+                        processJarForExec(name, before, configure=configure::accept)
+                    } else {
+                        processJarForExec(name, before, archive, configure::accept)
+                    }
+                }
+
+                for (creation in extension.classesJavaExecs) {
+                    val (name, before, archive, configure) = creation
+
+                    if (archive == null) {
+                        processJarForExec(name, before, configure=configure::accept)
+                    } else {
+                        processJarForExec(name, before, archive, configure::accept)
+                    }
+                }
             }
         }
     }
