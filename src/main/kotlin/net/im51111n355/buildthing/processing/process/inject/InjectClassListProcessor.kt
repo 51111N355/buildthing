@@ -108,10 +108,6 @@ class InjectClassListProcessor(
                     val newValue = classMap[removedLdcs[0]]
                         ?: emptyList()
 
-                    println("======================")
-                    println(removedLdcs[0])
-                    println(newValue)
-
                     // Создать нужный List
                     val wInsnList = InsnList()
                     var lastAddedInsn: AbstractInsnNode
