@@ -28,61 +28,7 @@ class BuildThingPlugin : Plugin<Project> {
     }
 
     private fun setupGroovyDsl() {
-        val extension = project.extensions.create("buildthing", BuildThingGroovyDsl::class.java)
-
-        project.afterEvaluate {
-            buildthing {
-                for (creation in extension.profiles) {
-                    val (name, from, configure) = creation
-
-                    if (from == null) {
-                        buildProfile(name, configure=configure::accept)
-                    } else {
-                        buildProfile(name, from, configure::accept)
-                    }
-                }
-
-                for (creation in extension.jarBeforeTask) {
-                    val (name, before, from, configure) = creation
-
-                    if (from == null) {
-                        processJarBeforeTask(name, before, configure=configure::accept)
-                    } else {
-                        processJarBeforeTask(name, before, from, configure::accept)
-                    }
-                }
-
-                for (creation in extension.classesBeforeTask) {
-                    val (name, before, from, configure) = creation
-
-                    if (from == null) {
-                        processClassesBeforeTask(name, before, configure=configure::accept)
-                    } else {
-                        processClassesBeforeTask(name, before, from, configure::accept)
-                    }
-                }
-
-                for (creation in extension.jarJavaExecs) {
-                    val (name, before, archive, configure) = creation
-
-                    if (archive == null) {
-                        processJarForExec(name, before, configure=configure::accept)
-                    } else {
-                        processJarForExec(name, before, archive, configure::accept)
-                    }
-                }
-
-                for (creation in extension.classesJavaExecs) {
-                    val (name, before, archive, configure) = creation
-
-                    if (archive == null) {
-                        processJarForExec(name, before, configure=configure::accept)
-                    } else {
-                        processJarForExec(name, before, archive, configure::accept)
-                    }
-                }
-            }
-        }
+        project.extensions.create("buildthing", BuildThingGroovyDsl::class.java, project)
     }
 
     // Добавляет standard.jar в зависимости, обрабатывает то что может быть несколько версий плагина с разными standard.jar (привязка к sha256)
