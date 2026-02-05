@@ -2,7 +2,6 @@ package net.im51111n355.buildthing.dsl
 
 import net.im51111n355.buildthing.task.IBuildThingTask
 import net.im51111n355.buildthing.task.build.BuildThingJarTask
-import net.im51111n355.buildthing.task.devruntime.BuildThingProcessInPlaceTask
 import net.im51111n355.buildthing.task.devruntime.BuildThingProcessOffPlaceTask
 import org.gradle.api.GradleException
 import org.gradle.api.Task

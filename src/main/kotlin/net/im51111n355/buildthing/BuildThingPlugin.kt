@@ -3,7 +3,6 @@ package net.im51111n355.buildthing
 import net.im51111n355.buildthing.dsl.BuildThingGroovyDsl
 import net.im51111n355.buildthing.dsl.buildthing
 import net.im51111n355.buildthing.task.build.BuildThingJarTask
-import net.im51111n355.buildthing.task.devruntime.BuildThingProcessInPlaceTask
 import net.im51111n355.buildthing.util.sha256
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
