@@ -28,7 +28,7 @@ class BuildThingConfiguration(
         configure: IBuildThingTask.() -> Unit
     ) {
         project.tasks.create<BuildThingJarTask>("build$name") {
-            description  = "Build $name"
+            description = "Build $name"
             group = "buildthing build profile"
 
             dependsOn(fromTask)
@@ -43,26 +43,6 @@ class BuildThingConfiguration(
 
             archiveClassifier.set("[$name]")
         }
-    }
-
-    fun processClassesBeforeTask(
-        name: String,
-        beforeTask: Task,
-
-        fromTask: Task = project.tasks.named<Jar>("jar").get(),
-        configure: IBuildThingTask.() -> Unit
-    ) {
-        throw GradleException("Replace processClassesBeforeTask(String, Task, Task, Configure) with processClassesForExec(String, JavaExec, AbstractArchiveTask, Configure)")
-    }
-
-    fun processJarBeforeTask(
-        name: String,
-        beforeTask: Task,
-
-        fromTask: AbstractArchiveTask = project.tasks.named<Jar>("jar").get(),
-        configure: IBuildThingTask.() -> Unit
-    ) {
-        throw GradleException("Replace processJarBeforeTask(String, Task, AbstractArchiveTask, Configure) with processJarForExec(String, JavaExec, AbstractArchiveTask, Configure)")
     }
 
     fun processClassesForExec(

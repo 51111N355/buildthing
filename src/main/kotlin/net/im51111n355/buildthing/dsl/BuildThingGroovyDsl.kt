@@ -32,28 +32,6 @@ abstract class BuildThingGroovyDsl(
         }
     }
 
-    @JvmOverloads
-    fun processClassesBeforeTask(
-        name: String,
-        beforeTask: Task,
-
-        fromTask: Task?,
-        configure: Action<IBuildThingTask>? = null
-    ) {
-        throw GradleException("Replace processClassesBeforeTask(String, Task, Task, Configure) with processClassesForExec(String, JavaExec, AbstractArchiveTask, Configure)")
-    }
-
-    @JvmOverloads
-    fun processJarBeforeTask(
-        name: String,
-        beforeTask: Task,
-
-        fromTask: AbstractArchiveTask?,
-        configure: Action<IBuildThingTask>? = null
-    ) {
-        throw GradleException("Replace processJarBeforeTask(String, Task, AbstractArchiveTask, Configure) with processJarForExec(String, JavaExec, AbstractArchiveTask, Configure)")
-    }
-
     fun processJarForExec(
         name: String,
         beforeTask: JavaExec,
