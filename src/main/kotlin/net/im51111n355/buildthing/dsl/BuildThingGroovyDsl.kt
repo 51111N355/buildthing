@@ -32,6 +32,7 @@ abstract class BuildThingGroovyDsl(
         }
     }
 
+    @JvmOverloads
     fun processJarForExec(
         name: String,
         beforeTask: JavaExec,
@@ -51,6 +52,7 @@ abstract class BuildThingGroovyDsl(
         }
     }
 
+    @JvmOverloads
     fun processClassesForExec(
         name: String,
         beforeTask: JavaExec,
