@@ -51,6 +51,15 @@ class FlagCuttingProcessor(
     private val fieldsToRemove = mutableSetOf<MemberInfo>()
 
     override fun process() {
+        classesOwnedByClasses.clear()
+        classesOwnedByMethods.clear()
+        classesToRemove.clear()
+        methodsToRemove.clear()
+        methodsToRemoveAtCallsite.clear()
+        javaStyleLambdaMethodsToRemove.clear()
+        kotlinStyleLambdaMethodsToRemove.clear()
+        fieldsToRemove.clear()
+
         if (master.config.disableCutter)
             return
 

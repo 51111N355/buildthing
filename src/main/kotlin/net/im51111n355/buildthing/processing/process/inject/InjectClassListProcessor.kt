@@ -24,6 +24,8 @@ class InjectClassListProcessor(
     private val classMap = mutableMapOf<String, MutableList<String>>()
 
     override fun process() {
+        classMap.clear()
+
         // 1 - Индексация классов с нужной аннотацией @ClassList
         master.processAll { classNode ->
             val annotation = classNode.visibleAnnotations?.getOptionalAnnotation<ClassList>()
