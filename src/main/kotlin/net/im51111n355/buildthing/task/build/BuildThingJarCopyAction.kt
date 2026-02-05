@@ -2,7 +2,7 @@ package net.im51111n355.buildthing.task.build
 
 import net.im51111n355.buildthing.config.BuildThingConfig
 import net.im51111n355.buildthing.processing.BuildThingProcessor
-import net.im51111n355.buildthing.processing.DirectoryWalkProcessingSource
+import net.im51111n355.buildthing.processing.source.DirectoryWalkProcessingSource
 import org.gradle.api.Project
 import org.gradle.api.internal.file.copy.CopyAction
 import org.gradle.api.internal.file.copy.CopyActionProcessingStream

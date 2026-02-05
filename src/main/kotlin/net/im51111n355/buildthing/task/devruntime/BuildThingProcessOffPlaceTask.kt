@@ -2,14 +2,12 @@ package net.im51111n355.buildthing.task.devruntime
 
 import net.im51111n355.buildthing.config.BuildThingConfig
 import net.im51111n355.buildthing.processing.BuildThingProcessor
-import net.im51111n355.buildthing.processing.MultipleSourcesProcessingSource
+import net.im51111n355.buildthing.processing.source.MultipleSourcesProcessingSource
 import net.im51111n355.buildthing.task.IBuildThingTask
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.FileCollection
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.PathSensitive
-import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import java.io.File
 
