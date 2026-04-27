@@ -1,11 +1,11 @@
 package net.im51111n355.buildthing.processing.process.inject.value
 
-import net.im51111n355.buildthing.processing.BuildThingProcessor
+import net.im51111n355.buildthing.processing.ProcessingProject
 import net.im51111n355.buildthing.processing.process.common.AbstractBuildTimeEvalStep
 import org.objectweb.asm.tree.MethodInsnNode
 
 class InjectStringValueEvalProcessor(
-    master: BuildThingProcessor
+    master: ProcessingProject
 ) : AbstractBuildTimeEvalStep(master) {
     override fun describeMethod() = "Inject.stringValue"
 

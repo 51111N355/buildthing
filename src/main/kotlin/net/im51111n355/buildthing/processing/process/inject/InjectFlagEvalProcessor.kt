@@ -1,12 +1,12 @@
 package net.im51111n355.buildthing.processing.process.inject
 
-import net.im51111n355.buildthing.processing.BuildThingProcessor
+import net.im51111n355.buildthing.processing.ProcessingProject
 import net.im51111n355.buildthing.processing.process.common.AbstractBuildTimeEvalStep
 import net.im51111n355.buildthing.util.FlagExpressionEval
 import org.objectweb.asm.tree.MethodInsnNode
 
 class InjectFlagEvalProcessor(
-    master: BuildThingProcessor
+    master: ProcessingProject
 ) : AbstractBuildTimeEvalStep(master) {
     override fun describeMethod() = "Inject.flag"
 

@@ -1,6 +1,6 @@
 package net.im51111n355.buildthing.util
 
-import net.im51111n355.buildthing.processing.BuildThingProcessor
+import net.im51111n355.buildthing.processing.ProcessingProject
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Opcodes
@@ -10,7 +10,7 @@ import java.io.InputStream
 import java.util.zip.ZipFile
 
 class ClassPathIndex(
-    val master: BuildThingProcessor
+    val master: ProcessingProject
 ) {
     // Изначально загружаются только строчки и то в каком файле они есть
     private val notLoadedClasses = mutableMapOf<String, File>()

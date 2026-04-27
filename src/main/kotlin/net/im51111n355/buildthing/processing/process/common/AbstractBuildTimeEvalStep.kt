@@ -1,7 +1,7 @@
 package net.im51111n355.buildthing.processing.process.common
 
-import net.im51111n355.buildthing.processing.BuildThingProcessor
-import net.im51111n355.buildthing.processing.BuildThingProcessor.ProcessAllAction
+import net.im51111n355.buildthing.processing.ProcessingProject
+import net.im51111n355.buildthing.processing.ProcessingResult
 import net.im51111n355.buildthing.processing.process.IProcessingStep
 import net.im51111n355.buildthing.util.getConstantPushedValue
 import net.im51111n355.buildthing.util.type
@@ -14,7 +14,7 @@ import org.objectweb.asm.tree.MethodInsnNode
 // BuildTimeEval шаги это например заменить InjectRandom.randInt(10, 10) на случайное число
 // Обязательно работает только со статичными целевыми методами!!!
 abstract class AbstractBuildTimeEvalStep(
-    val master: BuildThingProcessor,
+    val master: ProcessingProject,
 ) : IProcessingStep {
 
     // Для ошибок
@@ -30,95 +30,89 @@ abstract class AbstractBuildTimeEvalStep(
     override fun process() {
         var errors = false
 
-        master.processAll { classNode ->
+        master.processAllMethods { classNode, it ->
             var modified = false
+            var i = 0
 
-            classNode.methods.forEach {
-                var i = 0
-
-                while (i < it.instructions.size()) {
-                    val insn = it.instructions[i]
-                    if (insn !is MethodInsnNode) {
-                        i++
-                        continue
-                    }
-                    if (insn.opcode != Opcodes.INVOKESTATIC) {
-                        i++
-                        continue
-                    }
-                    if (!canBeReplaced(insn)) {
-                        i++
-                        continue
-                    }
-
-                    // Сначала проверить если ldc на нужные типы на месте
-                    val expectedTypes = Type.getArgumentTypes(insn.desc)
-
-                    if (!expectedTypes.all(::isAllowedTargetMethodType)) {
-                        i++
-                        continue
-                    }
-
-                    val nArgs = expectedTypes.size
-                    var dontInject = false
-
-                    for (n in 0 until nArgs) {
-                        val expectedType = expectedTypes[expectedTypes.size - n - 1]
-                        val expectedLdc = i - (n + 1)
-                        val hopefullyLdc = it.instructions[expectedLdc]
-                        val value = hopefullyLdc.getConstantPushedValue()
-
-                        if (value == null) {
-                            errors = true
-                            dontInject = true
-                            master.project.logger.error("Expected constant to be passed to a build-time-evaluated method ${describeMethod()}. In method \"${it.name}\" of class \"${classNode.type.className}\".")
-                            break
-                        }
-
-                        if (!isCompatibleType(expectedType, value.t)) {
-                            // Никогда не должно случиться потому что это будет значить что класс битый (Переданные аргументы в метод не совпадают с самими аргументами метода)
-                            throw AssertionError("${expectedType.className}, ${value.t?.javaClass?.name}")
-                        }
-                    }
-                    // Скип если были ошибки
-                    if (dontInject) {
-                        i++
-                        continue
-                    }
-
-                    modified = true
-
-                    // Снести LDC, сам Invoke, заменить на значение из makeReplacementCst()
-                    val removedLdcs = mutableListOf<Any?>()
-
-                    for (n in 0 until nArgs) {
-                        val expectedType = expectedTypes[expectedTypes.size - n - 1]
-                        val expectedLdc = i - (n + 1)
-                        val hopefullyLdc = it.instructions[expectedLdc]
-
-                        val value = hopefullyLdc.getConstantPushedValue()
-                            ?: throw AssertionError()
-
-                        if (!isCompatibleType(expectedType, value.t))
-                            throw AssertionError()
-
-                        removedLdcs.add(0, castCompatibleTypes(expectedType, value.t))
-                        it.instructions.remove(hopefullyLdc)
-                    }
-
-                    val newValue = makeReplacementCst(removedLdcs.toTypedArray())
-                    val newInsn = LdcInsnNode(newValue)
-                    it.instructions.set(insn, newInsn)
-
-                    i = it.instructions.indexOf(newInsn)
+            while (i < it.instructions.size()) {
+                val insn = it.instructions[i]
+                if (insn !is MethodInsnNode) {
                     i++
+                    continue
                 }
+                if (insn.opcode != Opcodes.INVOKESTATIC) {
+                    i++
+                    continue
+                }
+                if (!canBeReplaced(insn)) {
+                    i++
+                    continue
+                }
+
+                // Сначала проверить если ldc на нужные типы на месте
+                val expectedTypes = Type.getArgumentTypes(insn.desc)
+
+                if (!expectedTypes.all(::isAllowedTargetMethodType)) {
+                    i++
+                    continue
+                }
+
+                val nArgs = expectedTypes.size
+                var dontInject = false
+
+                for (n in 0 until nArgs) {
+                    val expectedType = expectedTypes[expectedTypes.size - n - 1]
+                    val expectedLdc = i - (n + 1)
+                    val hopefullyLdc = it.instructions[expectedLdc]
+                    val value = hopefullyLdc.getConstantPushedValue()
+
+                    if (value == null) {
+                        errors = true
+                        dontInject = true
+                        master.gradleProject.logger.error("Expected constant to be passed to a build-time-evaluated method ${describeMethod()}. In method \"${it.name}\" of class \"${classNode.type.className}\".")
+                        break
+                    }
+
+                    if (!isCompatibleType(expectedType, value.t)) {
+                        // Никогда не должно случиться потому что это будет значить что класс битый (Переданные аргументы в метод не совпадают с самими аргументами метода)
+                        throw AssertionError("${expectedType.className}, ${value.t?.javaClass?.name}")
+                    }
+                }
+                // Скип если были ошибки
+                if (dontInject) {
+                    i++
+                    continue
+                }
+
+                modified = true
+
+                // Снести LDC, сам Invoke, заменить на значение из makeReplacementCst()
+                val removedLdcs = mutableListOf<Any?>()
+
+                for (n in 0 until nArgs) {
+                    val expectedType = expectedTypes[expectedTypes.size - n - 1]
+                    val expectedLdc = i - (n + 1)
+                    val hopefullyLdc = it.instructions[expectedLdc]
+
+                    val value = hopefullyLdc.getConstantPushedValue()
+                        ?: throw AssertionError()
+
+                    if (!isCompatibleType(expectedType, value.t))
+                        throw AssertionError()
+
+                    removedLdcs.add(0, castCompatibleTypes(expectedType, value.t))
+                    it.instructions.remove(hopefullyLdc)
+                }
+
+                val newValue = makeReplacementCst(removedLdcs.toTypedArray())
+                val newInsn = LdcInsnNode(newValue)
+                it.instructions.set(insn, newInsn)
+
+                i = it.instructions.indexOf(newInsn)
+                i++
             }
 
-            return@processAll if (modified)
-                ProcessAllAction.MODIFIED
-            else
-                ProcessAllAction.NOT_MODIFIED
+            return@processAllMethods ProcessingResult.fromIsModified(modified)
         }
 
         if (errors)

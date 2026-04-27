@@ -1,7 +1,7 @@
 package net.im51111n355.buildthing.processing.process.inject
 
-import net.im51111n355.buildthing.processing.BuildThingProcessor
-import net.im51111n355.buildthing.processing.BuildThingProcessor.ProcessAllAction
+import net.im51111n355.buildthing.processing.ProcessingProject
+import net.im51111n355.buildthing.processing.ProcessingResult
 import net.im51111n355.buildthing.processing.process.IProcessingStep
 import net.im51111n355.buildthing.standard.ClassList
 import net.im51111n355.buildthing.util.getConstantPushedValue
@@ -18,7 +18,7 @@ import org.objectweb.asm.tree.MethodInsnNode
 import org.objectweb.asm.tree.TypeInsnNode
 
 class InjectClassListProcessor(
-    val master: BuildThingProcessor
+    val master: ProcessingProject
 ) : IProcessingStep {
     // Key -> List<Class Name>
     private val classMap = mutableMapOf<String, MutableList<String>>()
@@ -27,9 +27,9 @@ class InjectClassListProcessor(
         classMap.clear()
 
         // 1 - Индексация классов с нужной аннотацией @ClassList
-        master.processAll { classNode ->
+        master.processAllClasses { classNode ->
             val annotation = classNode.visibleAnnotations?.getOptionalAnnotation<ClassList>()
-                ?: return@processAll ProcessAllAction.NOT_MODIFIED
+                ?: return@processAllClasses ProcessingResult.NOT_MODIFIED
 
             val keys = annotation.getRequiredArgument<List<String>>("value")
             for (key in keys) {
@@ -37,13 +37,13 @@ class InjectClassListProcessor(
                     .add(classNode.name)
             }
 
-            return@processAll ProcessAllAction.NOT_MODIFIED
+            return@processAllClasses ProcessingResult.NOT_MODIFIED
         }
 
         var errors = false
 
         // 2 - Замена INVOKESTATIC Inject.classList(String)
-        master.processAll { classNode ->
+        master.processAllClasses { classNode ->
             var modified = false
 
             classNode.methods.forEach {
@@ -81,7 +81,7 @@ class InjectClassListProcessor(
                         if (value == null) {
                             errors = true
                             dontInject = true
-                            master.project.logger.error("Expected constant to be passed to a build-time-evaluated method Inject.classList. In method \"${it.name}\" of class \"${classNode.type.className}\".")
+                            master.gradleProject.logger.error("Expected constant to be passed to a build-time-evaluated method Inject.classList. In method \"${it.name}\" of class \"${classNode.type.className}\".")
                             break
                         }
                     }
@@ -135,10 +135,7 @@ class InjectClassListProcessor(
                 }
             }
 
-            return@processAll if (modified)
-                ProcessAllAction.MODIFIED
-            else
-                ProcessAllAction.NOT_MODIFIED
+            return@processAllClasses ProcessingResult.fromIsModified(modified)
         }
     }
 }

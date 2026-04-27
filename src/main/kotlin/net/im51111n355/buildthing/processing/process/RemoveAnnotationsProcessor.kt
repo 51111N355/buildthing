@@ -1,7 +1,7 @@
 package net.im51111n355.buildthing.processing.process
 
-import net.im51111n355.buildthing.processing.BuildThingProcessor
-import net.im51111n355.buildthing.processing.BuildThingProcessor.ProcessAllAction
+import net.im51111n355.buildthing.processing.ProcessingProject
+import net.im51111n355.buildthing.processing.ProcessingResult
 import net.im51111n355.buildthing.standard.ClassList
 import net.im51111n355.buildthing.standard.FlagCuttable
 import net.im51111n355.buildthing.standard.RemoveAtCallsite
@@ -10,44 +10,37 @@ import org.objectweb.asm.Type
 import org.objectweb.asm.tree.AnnotationNode
 
 class RemoveAnnotationsProcessor(
-    val master: BuildThingProcessor
+    val master: ProcessingProject
 ): IProcessingStep {
     override fun process() {
-        master.processAll { classNode ->
-            var modified = false
-
-            classNode.visibleAnnotations
+        master.processAllClasses { classNode ->
+            val modified = classNode.visibleAnnotations
                 ?.removeIf {
                     val remove = shouldRemoveAnnotation(it)
-                    if (remove) modified = true
-
                     return@removeIf remove
                 }
 
-            classNode.methods.forEach {
-                it.visibleAnnotations
-                    ?.removeIf {
-                        val remove = shouldRemoveAnnotation(it)
-                        if (remove) modified = true
+            return@processAllClasses ProcessingResult.fromIsModified(modified == true)
+        }
 
-                        return@removeIf remove
-                    }
-            }
+        master.processAllFields { _, it ->
+            val modified = it.visibleAnnotations
+                ?.removeIf {
+                    val remove = shouldRemoveAnnotation(it)
+                    return@removeIf remove
+                }
 
-            classNode.fields.forEach {
-                it.visibleAnnotations
-                    ?.removeIf {
-                        val remove = shouldRemoveAnnotation(it)
-                        if (remove) modified = true
+            return@processAllFields ProcessingResult.fromIsModified(modified == true)
+        }
 
-                        return@removeIf remove
-                    }
-            }
+        master.processAllMethods { _, it ->
+            val modified = it.visibleAnnotations
+                ?.removeIf {
+                    val remove = shouldRemoveAnnotation(it)
+                    return@removeIf remove
+                }
 
-            return@processAll if (modified)
-                ProcessAllAction.MODIFIED
-            else
-                ProcessAllAction.NOT_MODIFIED
+            return@processAllMethods ProcessingResult.fromIsModified(modified == true)
         }
     }
 

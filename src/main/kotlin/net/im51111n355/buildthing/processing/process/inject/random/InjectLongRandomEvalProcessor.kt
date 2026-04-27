@@ -1,12 +1,12 @@
 package net.im51111n355.buildthing.processing.process.inject.random
 
-import net.im51111n355.buildthing.processing.BuildThingProcessor
+import net.im51111n355.buildthing.processing.ProcessingProject
 import net.im51111n355.buildthing.processing.process.common.AbstractBuildTimeEvalStep
 import org.objectweb.asm.tree.MethodInsnNode
 import java.util.concurrent.ThreadLocalRandom
 
 class InjectLongRandomEvalProcessor(
-    master: BuildThingProcessor
+    master: ProcessingProject
 ) : AbstractBuildTimeEvalStep(master) {
     override fun describeMethod() = "Inject.randLong"
 

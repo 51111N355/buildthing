@@ -1,7 +1,7 @@
 package net.im51111n355.buildthing.task.devruntime
 
 import net.im51111n355.buildthing.config.BuildThingConfig
-import net.im51111n355.buildthing.processing.BuildThingProcessor
+import net.im51111n355.buildthing.processing.ProcessingProject
 import net.im51111n355.buildthing.processing.source.MultipleSourcesProcessingSource
 import net.im51111n355.buildthing.task.IBuildThingTask
 import org.gradle.api.DefaultTask
@@ -61,7 +61,7 @@ abstract class BuildThingProcessOffPlaceTask() : DefaultTask(), IBuildThingTask 
         }
 
         val processingSource = MultipleSourcesProcessingSource(sourceDirs)
-        val processor = BuildThingProcessor(project, processingSource, config)
+        val processor = ProcessingProject(project, processingSource, config)
         processor.process()
     }
 }

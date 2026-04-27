@@ -21,18 +21,20 @@ import net.im51111n355.buildthing.util.SafeCW
 import org.gradle.api.Project
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.tree.AbstractInsnNode
 import org.objectweb.asm.tree.ClassNode
-import java.io.File
+import org.objectweb.asm.tree.FieldNode
+import org.objectweb.asm.tree.MethodNode
 
-class BuildThingProcessor(
-    val project: Project,
-    val processIn: IProcessingSource,
+class ProcessingProject(
+    val gradleProject: Project,
+    val files: IProcessingSource,
     val config: BuildThingConfig
 ) {
     val index = ClassPathIndex(this)
 
     // Инстансы ClassNode на которых проходит новый processAll
-    private val allClassNodes = mutableListOf<LoadedClassNode>()
+    private val allClassNodes = mutableListOf<ProcessingClassNode>()
 
     private val processors = listOf(
         FlagCuttingProcessor(this),
@@ -57,11 +59,11 @@ class BuildThingProcessor(
 
     fun process() {
         // Индекс - библиотеки
-        project.configurations.findByName("compileClasspath")!!
+        gradleProject.configurations.findByName("compileClasspath")!!
             .files.forEach(index::index)
 
         // Индекс - классы самого проекта
-        for (file in processIn) {
+        for (file in files) {
             if (file.extension != "class") continue
 
             val bytes = file.readBytes()
@@ -69,7 +71,7 @@ class BuildThingProcessor(
         }
 
         // Загрузить все классы
-        for (file in processIn) {
+        for (file in files) {
             if (file.extension != "class") continue
 
             // Чтение
@@ -77,7 +79,7 @@ class BuildThingProcessor(
             val classReader = ClassReader(file.readBytes())
             classReader.accept(classNode, ClassReader.SKIP_DEBUG) // <- Поддерживать Node'ы на всякие номера строк очень бесит на самом деле, так что пока что SKIP_DEBUG
 
-            allClassNodes.add(LoadedClassNode(classNode, file, false))
+            allClassNodes.add(ProcessingClassNode(classNode, file, false))
         }
 
         // Обработка
@@ -89,29 +91,42 @@ class BuildThingProcessor(
             val (classNode, file, modified) = node
             if (!modified) continue
 
-            val classWriter = SafeCW(ClassWriter.COMPUTE_MAXS or ClassWriter.COMPUTE_FRAMES, index)
-            classNode.accept(classWriter)
-            file.writeBytes(classWriter.toByteArray())
+            try {
+                val classWriter = SafeCW(ClassWriter.COMPUTE_MAXS or ClassWriter.COMPUTE_FRAMES, index)
+                classNode.accept(classWriter)
+                file.writeBytes(classWriter.toByteArray())
+            } catch (e: Exception) {
+                throw ProcessingCrashException(node, null, e)
+            } catch (e: ProcessingCrashException) {
+                throw e.copy(inClass = node)
+            }
         }
     }
 
-    fun processAll(modify: (ClassNode) -> ProcessAllAction) {
+    fun processAllClasses(modify: (ClassNode) -> ProcessingResult) {
         val iter = allClassNodes.iterator()
 
         while (iter.hasNext()) {
             val data = iter.next()
-            val result =  modify(data.node)
 
-            if (result == ProcessAllAction.NOT_MODIFIED) {
+            val result = try {
+                modify(data.node)
+            } catch (e: Exception) {
+                throw ProcessingCrashException(data, null, e)
+            } catch (c: ProcessingCrashException) {
+                throw c.copy(inClass = data)
+            }
+
+            if (result == ProcessingResult.NOT_MODIFIED) {
                 continue
             }
 
-            if (result == ProcessAllAction.MODIFIED) {
-                data.modifiedEver = true
+            if (result == ProcessingResult.MODIFIED) {
+                data.hasUnwrittenModifications = true
                 continue
             }
 
-            if (result == ProcessAllAction.DELETE) {
+            if (result == ProcessingResult.DELETE) {
                 iter.remove()
                 data.file.delete()
                 continue
@@ -119,15 +134,57 @@ class BuildThingProcessor(
         }
     }
 
-    private data class LoadedClassNode(
-        val node: ClassNode,
-        val file: File,
-        var modifiedEver: Boolean
-    )
+    fun processAllMethods(modify: (ClassNode, MethodNode) -> ProcessingResult) {
+        processAllClasses { classNode ->
+            var classModified = false
 
-    enum class ProcessAllAction {
-        NOT_MODIFIED,
-        MODIFIED,
-        DELETE
+            classNode.methods.removeIf { methodNode ->
+                val memberForCrashReport = MemberInfo(classNode.name, methodNode.name, methodNode.desc)
+                val result = try {
+                    modify(classNode, methodNode)
+                } catch (e: Exception) {
+                    throw ProcessingCrashException(null, memberForCrashReport, e)
+                } catch (c: ProcessingCrashException) {
+                    throw c.copy(inMember = memberForCrashReport)
+                }
+
+                if (result != ProcessingResult.NOT_MODIFIED)
+                    classModified = true
+
+                return@removeIf result == ProcessingResult.DELETE
+            }
+
+            return@processAllClasses if (classModified)
+                ProcessingResult.MODIFIED
+            else
+                ProcessingResult.NOT_MODIFIED
+        }
+    }
+
+    fun processAllFields(modify: (ClassNode, FieldNode) -> ProcessingResult) {
+        processAllClasses { classNode ->
+            var classModified = false
+
+            classNode.fields.removeIf { fieldNode ->
+                val memberForCrashReport = MemberInfo(classNode.name, fieldNode.name, fieldNode.desc)
+                val result = try {
+                    modify(classNode, fieldNode)
+                } catch (e: Exception) {
+                    throw ProcessingCrashException(null, memberForCrashReport, e)
+                } catch (c: ProcessingCrashException) {
+                    throw c.copy(inMember = memberForCrashReport)
+                }
+
+                if (result != ProcessingResult.NOT_MODIFIED)
+                    classModified = true
+
+                return@removeIf result == ProcessingResult.DELETE
+            }
+
+            return@processAllClasses if (classModified)
+                ProcessingResult.MODIFIED
+            else
+                ProcessingResult.NOT_MODIFIED
+        }
     }
 }

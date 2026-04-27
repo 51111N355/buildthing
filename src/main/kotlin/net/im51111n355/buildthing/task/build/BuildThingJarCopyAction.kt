@@ -1,7 +1,7 @@
 package net.im51111n355.buildthing.task.build
 
 import net.im51111n355.buildthing.config.BuildThingConfig
-import net.im51111n355.buildthing.processing.BuildThingProcessor
+import net.im51111n355.buildthing.processing.ProcessingProject
 import net.im51111n355.buildthing.processing.source.DirectoryWalkProcessingSource
 import org.gradle.api.Project
 import org.gradle.api.internal.file.copy.CopyAction
@@ -29,7 +29,7 @@ class BuildThingJarCopyAction(
 
         // Обработкаа
         val processingSource = DirectoryWalkProcessingSource(processIn)
-        val processor = BuildThingProcessor(project, processingSource, config)
+        val processor = ProcessingProject(project, processingSource, config)
         processor.process()
 
         // Запаковать в .jar

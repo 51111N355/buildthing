@@ -1,7 +1,7 @@
 package net.im51111n355.buildthing.processing.process
 
-import net.im51111n355.buildthing.processing.BuildThingProcessor
-import net.im51111n355.buildthing.processing.BuildThingProcessor.ProcessAllAction
+import net.im51111n355.buildthing.processing.ProcessingProject
+import net.im51111n355.buildthing.processing.ProcessingResult
 import net.im51111n355.buildthing.standard.FlagCuttable
 import net.im51111n355.buildthing.standard.RemoveAtCallsite
 import net.im51111n355.buildthing.util.FlagExpressionEval
@@ -27,9 +27,10 @@ import org.objectweb.asm.tree.LineNumberNode
 import org.objectweb.asm.tree.MethodInsnNode
 import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.tree.TypeInsnNode
+import java.util.Arrays
 
 class FlagCuttingProcessor(
-    val master: BuildThingProcessor
+    val master: ProcessingProject
 ): IProcessingStep {
     // Владелец Класс -> Его внутренний класс на удаление
     private val classesOwnedByClasses = mutableSetOf<Pair<String, String>>()
@@ -62,7 +63,7 @@ class FlagCuttingProcessor(
             return
 
         // Скан удаляемых классов на outerClass / outerMethod+outerMethodDesc
-        master.processAll { classNode ->
+        master.processAllClasses { classNode ->
             val outerClass = classNode.outerClass
             val outerMethod = classNode.outerMethod
             val outerMethodDesc = classNode.outerMethodDesc
@@ -74,82 +75,78 @@ class FlagCuttingProcessor(
                 classesOwnedByClasses.add(Pair(outerClass, classNode.name))
             }
 
-            return@processAll ProcessAllAction.NOT_MODIFIED
+            return@processAllClasses ProcessingResult.NOT_MODIFIED
         }
 
         // Сначала найти что удалять.
         // Вносит в classesToRemove, methodsToRemove, methodsToRemoveAtCallsite, fieldsToRemove цели для сноса
-        master.processAll { classNode ->
+        master.processAllClasses { classNode ->
             // Проверка на вырезание класса
-            if (isCuttable(classNode.visibleAnnotations)) {
-                classesToRemove.add(classNode.name)
+            if (!isCuttable(classNode.visibleAnnotations))
+                return@processAllClasses ProcessingResult.NOT_MODIFIED
 
-                // Классы которые относятся именно к этому классу
-                classesOwnedByClasses
-                    .filter { it.first == classNode.name }
-                    .map { it.second }
-                    .forEach(classesToRemove::add)
+            classesToRemove.add(classNode.name)
 
-                // Классы которые относятся к методам этого класса тоже
-                classesOwnedByMethods
-                    .filter { it.first.className == classNode.name }
-                    .map { it.second }
-                    .forEach(classesToRemove::add)
+            // Классы которые относятся именно к этому классу
+            classesOwnedByClasses
+                .filter { it.first == classNode.name }
+                .map { it.second }
+                .forEach(classesToRemove::add)
 
-                return@processAll ProcessAllAction.NOT_MODIFIED
-            }
+            // Классы которые относятся к методам этого класса тоже
+            classesOwnedByMethods
+                .filter { it.first.className == classNode.name }
+                .map { it.second }
+                .forEach(classesToRemove::add)
 
-            // Проверки у методов
-            classNode.methods
-                .filter { isCuttable(it.visibleAnnotations) }
-                .forEach {
-                    val atCallsite = it.visibleAnnotations.getOptionalAnnotation<RemoveAtCallsite>() != null
-
-                    val listTo = if (atCallsite)
-                        methodsToRemoveAtCallsite
-                    else
-                        methodsToRemove
-
-                    val member = MemberInfo(
-                        classNode.name,
-                        it.name,
-                        it.desc
-                    )
-
-                    listTo.add(member)
-
-                    // Классы которые относятся к этому методу тоже
-                    classesOwnedByMethods
-                        .filter { it.first == member }
-                        .map { it.second }
-                        .forEach(classesToRemove::add)
-                }
-
-            // Проверка на удаление полей
-            classNode.fields
-                .filter { isCuttable(it.visibleAnnotations) }
-                .forEach {
-                    fieldsToRemove.add(MemberInfo(
-                        classNode.name,
-                        it.name,
-                        it.desc
-                    ))
-                }
-
-            return@processAll ProcessAllAction.NOT_MODIFIED
+            return@processAllClasses ProcessingResult.NOT_MODIFIED
         }
 
-        // Информация
-        master.project.logger.info("BuildThing scan pass:")
-        master.project.logger.info("  \\ ${classesToRemove.size} Classes marked for removal")
-        master.project.logger.info("  \\ ${methodsToRemove.size} Methods marked for removal")
-        master.project.logger.info("  \\ ${fieldsToRemove.size} Fields marked for removal")
+        master.processAllMethods { classNode, it ->
+            if (!isCuttable(it.visibleAnnotations))
+                return@processAllMethods ProcessingResult.NOT_MODIFIED
 
+            val atCallsite = it.visibleAnnotations.getOptionalAnnotation<RemoveAtCallsite>() != null
+
+            val listTo = if (atCallsite)
+                methodsToRemoveAtCallsite
+            else
+                methodsToRemove
+
+            val member = MemberInfo(
+                classNode.name,
+                it.name,
+                it.desc
+            )
+            listTo.add(member)
+
+            // Классы которые относятся к этому методу тоже
+            classesOwnedByMethods
+                .filter { it.first == member }
+                .map { it.second }
+                .forEach(classesToRemove::add)
+
+            return@processAllMethods ProcessingResult.NOT_MODIFIED
+        }
+
+        master.processAllFields { classNode, it ->
+            if (!isCuttable(it.visibleAnnotations))
+                return@processAllFields ProcessingResult.NOT_MODIFIED
+
+            fieldsToRemove.add(MemberInfo(
+                classNode.name,
+                it.name,
+                it.desc
+            ))
+            return@processAllFields ProcessingResult.NOT_MODIFIED
+        }
+
+        // im51111n355 FIXME: Переделать на processAllMethods/processAllFields в одбновлении
         // Скан лямбды на удаление, зависит от ПОЛНОГО прошлого шага
         // Если включено то снос (уже?) не использованных синтетиков, и private static final методов с "$lambda" в названии
-        master.processAll { classNode ->
+        master.processAllClasses { classNode ->
             if (classNode.name in classesToRemove)
-                return@processAll ProcessAllAction.NOT_MODIFIED
+                return@processAllClasses ProcessingResult.NOT_MODIFIED
 
             // Кандидаты на снос
             val javaStyleCandidates = classNode.methods
@@ -175,6 +172,7 @@ class FlagCuttingProcessor(
 
                 for (insn in it.instructions) {
                     if (insn is InvokeDynamicInsnNode) {
+                        println(insn.bsmArgs.contentToString())
                         val target = insn.bsmArgs[1] as Handle
 
                         val info = MemberInfo(
@@ -212,33 +210,29 @@ class FlagCuttingProcessor(
             javaStyleLambdaMethodsToRemove.addAll(javaStyleCandidates)
             kotlinStyleLambdaMethodsToRemove.addAll(kotlinStyleCandidates)
 
-            return@processAll ProcessAllAction.NOT_MODIFIED
+            return@processAllClasses ProcessingResult.NOT_MODIFIED
         }
 
-        // Информация
-        master.project.logger.info("BuildThing lambda scan pass:")
-        master.project.logger.info("  \\ ${javaStyleLambdaMethodsToRemove.size} Java Style Lambda Implementation marked for removal")
-        master.project.logger.info("  \\ ${kotlinStyleLambdaMethodsToRemove.size} Kotlin Style Lambda Implementation marked for removal")
-
+        // im51111n355 FIXME: Переделать на processAllMethods/processAllFields в одбновлении
         // Дальше проверить что оно не вызывается из кода который не будет удалён.
         // Ищет если где-то есть доступ к чему-либо что будет удалено, игнорирует использования из других удалённых мест
         var validationIssues = false
 
-        master.processAll { classNode ->
+        master.processAllClasses { classNode ->
             if (classNode.name in classesToRemove)
-                return@processAll ProcessAllAction.NOT_MODIFIED
+                return@processAllClasses ProcessingResult.NOT_MODIFIED
 
             // Проверить если реализуемые интерфейсы будут удалены
             classNode.interfaces.forEach {
                 if (it in classesToRemove) {
-                    master.project.logger.error("Validation error: Class \"${classNode.type.className}\" implements an interface that will be removed! (${it})")
+                    master.gradleProject.logger.error("Validation error: Class \"${classNode.type.className}\" implements an interface that will be removed! (${it})")
                     validationIssues = true
                 }
             }
 
             // Проверить если родительский класс будет удалён
             if (classNode.superName in classesToRemove) {
-                master.project.logger.error("Validation error: Class \"${classNode.type.className}\" extends a class that will be removed (${classNode.superName}).")
+                master.gradleProject.logger.error("Validation error: Class \"${classNode.type.className}\" extends a class that will be removed (${classNode.superName}).")
                 validationIssues = true
             }
 
@@ -254,7 +248,7 @@ class FlagCuttingProcessor(
                     return@forEach
 
                 if (it.type.internalName in classesToRemove) {
-                    master.project.logger.error("Validation error: Field \"${it.name}\" in class \"${classNode.type.className}\" is of type that will be removed (${it.type.internalName}).")
+                    master.gradleProject.logger.error("Validation error: Field \"${it.name}\" in class \"${classNode.type.className}\" is of type that will be removed (${it.type.internalName}).")
                     validationIssues = true
                 }
             }
@@ -269,14 +263,14 @@ class FlagCuttingProcessor(
                     .argumentTypes
                     .forEach { argType ->
                         if (argType.internalName in classesToRemove) {
-                            master.project.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has an argument of type that will be removed (${argType.internalName}).")
+                            master.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has an argument of type that will be removed (${argType.internalName}).")
                             validationIssues = true
                         }
                     }
 
                 // Тип возврата
                 if (Type.getReturnType(it.desc).internalName in classesToRemove) {
-                    master.project.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" returns a type that will be removed (${Type.getReturnType(it.desc).internalName}).")
+                    master.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" returns a type that will be removed (${Type.getReturnType(it.desc).internalName}).")
                     validationIssues = true
                 }
 
@@ -284,7 +278,7 @@ class FlagCuttingProcessor(
                 it.instructions.forEach { insn ->
                     // Вызовы
                     if (insn is MethodInsnNode && insn.owner in classesToRemove) {
-                        master.project.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has a call to a class that will be removed (${insn.owner}).")
+                        master.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has a call to a class that will be removed (${insn.owner}).")
                         validationIssues = true
                     }
 
@@ -296,14 +290,14 @@ class FlagCuttingProcessor(
                         )
 
                         if (!isMethodMemberGoingToExist(info, false)) {
-                            master.project.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has a call to a method that will be removed (${info}).")
+                            master.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has a call to a method that will be removed (${info}).")
                             validationIssues = true
                         }
                     }
 
                     // Поля
                     if (insn is FieldInsnNode && insn.owner in classesToRemove) {
-                        master.project.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has access of a field of a type that will be removed (${insn.owner}).")
+                        master.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has access of a field of a type that will be removed (${insn.owner}).")
                         validationIssues = true
                     }
 
@@ -315,7 +309,7 @@ class FlagCuttingProcessor(
                         )
 
                         if (info in fieldsToRemove) {
-                            master.project.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has a field access to a field that will be removed (${info}).")
+                            master.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has a field access to a field that will be removed (${info}).")
                             validationIssues = true
                         }
                     }
@@ -328,144 +322,131 @@ class FlagCuttingProcessor(
                             Opcodes.CHECKCAST -> "a cast to"
                             Opcodes.INSTANCEOF -> "an instanceof check for"
                             else -> {
-                                master.project.logger.warn("Unknown opcode ${insn.opcode} for TypeInsnNode!")
+                                master.gradleProject.logger.warn("Unknown opcode ${insn.opcode} for TypeInsnNode!")
                                 "an operation with"
                             }
                         }
 
-                        master.project.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has $descMsg a class that will be removed (${insn.desc}).")
+                        master.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has $descMsg a class that will be removed (${insn.desc}).")
                         validationIssues = true
                     }
                 }
 
                 it.localVariables?.forEach { local ->
                     if (local.desc in classesToRemove) {
-                        master.project.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has a local variable \"${local.name}\" of type that will be removed (${local.desc}).")
+                        master.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has a local variable \"${local.name}\" of type that will be removed (${local.desc}).")
                         validationIssues = true
                     }
                 }
             }
 
-            return@processAll ProcessAllAction.NOT_MODIFIED
+            return@processAllClasses ProcessingResult.NOT_MODIFIED
         }
 
         if (validationIssues)
             throw GradleException("Validation issues were found!")
 
         // Дальше примернить основное вырезание
-        master.processAll { classNode ->
-            if (classNode.name in classesToRemove)
-                return@processAll ProcessAllAction.DELETE
+        // Классы
+        master.processAllClasses { classNode ->
+            return@processAllClasses ProcessingResult.fromIsDeleted(classNode.name in classesToRemove)
+        }
 
+        // Методы (Основное вырезание)
+        master.processAllMethods { classNode, it ->
+            return@processAllMethods ProcessingResult.fromIsDeleted(!isMethodGoingToExist(classNode, it, true))
+        }
+
+        master.processAllMethods { classNode, it ->
             var modified = false
 
-            // Сносит методы которые считаются как на удаление все вместе
-            // Тут же обработка настроек на удаление лямбд, и всего другого что я может быть добавлю
-            classNode.methods
-                .removeIf {
-                    val removal = !isMethodGoingToExist(classNode, it, true)
-                    if (removal) modified = true
+            // Собрать инструкции на удаление
+            val toRemove = mutableListOf<MethodInsnNode>()
 
-                    return@removeIf removal
-                }
+            for (insn in it.instructions) {
+                if (insn is MethodInsnNode) {
+                    val info = MemberInfo(
+                        insn.owner,
+                        insn.name,
+                        insn.desc
+                    )
 
-            // Снос вызовов RemoveAtCallsite методов
-            classNode.methods.forEach {
-                // Собрать инструкции на удаление
-                val toRemove = mutableListOf<MethodInsnNode>()
+                    if (info !in methodsToRemoveAtCallsite)
+                        continue
 
-                for (insn in it.instructions) {
-                    if (insn is MethodInsnNode) {
-                        val info = MemberInfo(
-                            insn.owner,
-                            insn.name,
-                            insn.desc
-                        )
-
-                        if (info !in methodsToRemoveAtCallsite)
-                            continue
-
-                        toRemove.add(insn)
-                    }
-                }
-
-                if (!toRemove.isEmpty())
-                    modified = true
-
-                // Снос! Ура!
-                for (node in toRemove) {
-                    val argTypes = Type.getArgumentTypes(node.desc)
-                    val returntype = Type.getReturnType(node.desc)
-
-                    val isStatic = node.opcode == Opcodes.INVOKESTATIC
-
-                    // pop'ы на удаление загруженных push
-                    val pops = InsnList()
-
-                    for (arg in argTypes.reversed()) {
-                        if (arg.size == 2)
-                            pops.add(InsnNode(Opcodes.POP2))
-                        else
-                            pops.add(InsnNode(Opcodes.POP))
-                    }
-
-                    // "this"
-                    if (!isStatic)
-                        pops.add(InsnNode(Opcodes.POP))
-
-                    // push на Возвращаемое значение по умолчанию. null для объектов, 0 для примитивов
-                    val defaultPush = InsnList()
-                    when (returntype.sort) {
-                        Type.VOID -> {} // Ничего
-                        Type.OBJECT, Type.ARRAY -> defaultPush.add(InsnNode(Opcodes.ACONST_NULL)) // null
-                        Type.BOOLEAN, Type.BYTE, Type.CHAR, Type.SHORT, Type.INT -> defaultPush.add(InsnNode(Opcodes.ICONST_0)) // 0
-                        Type.FLOAT -> defaultPush.add(InsnNode(Opcodes.FCONST_0)) // 0.0F
-                        Type.LONG -> defaultPush.add(InsnNode(Opcodes.LCONST_0)) // 0L
-                        Type.DOUBLE -> defaultPush.add(InsnNode(Opcodes.DCONST_0)) // 0.0D
-                        else -> AssertionError()
-                    }
-
-                    // Если прошлая insn - INVOKEDYNAMIC то ТАК УЖ И БЫТЬ снесу первый POP и ту инструкцию
-                    // Это чтобы удалять лямбду которая оказалась первым параметром этой функции (Кто-то делает Invoke.ifServer(...) штучки в Java)
-                    var prev = node.previous
-
-                    // Котлин любит генерировать эти инструкции, а в Java ни разу не попадались
-                    while (prev is LabelNode || prev is LineNumberNode) {
-                        prev = prev.previous
-                    }
-
-                    if (prev is InvokeDynamicInsnNode) {
-                        it.instructions.remove(prev)
-                        pops.remove(pops.first)
-                    }
-
-                    // Удаление, Вставка оставшихся pop, Вставка push дефолта
-                    val insertBefore = node.next
-                    it.instructions.remove(node)
-                    it.instructions.insertBefore(insertBefore, pops)
-                    it.instructions.insertBefore(insertBefore, defaultPush)
+                    toRemove.add(insn)
                 }
             }
 
-            // Поля
-            classNode.fields
-                .removeIf {
-                    val info = MemberInfo(
-                        classNode.name,
-                        it.name,
-                        it.desc
-                    )
+            if (!toRemove.isEmpty())
+                modified = true
 
-                    val shouldRemove = info in fieldsToRemove
-                    if (shouldRemove) modified = true
+            // Снос! Ура!
+            for (node in toRemove) {
+                val argTypes = Type.getArgumentTypes(node.desc)
+                val returntype = Type.getReturnType(node.desc)
 
-                    return@removeIf shouldRemove
+                val isStatic = node.opcode == Opcodes.INVOKESTATIC
+
+                // pop'ы на удаление загруженных push
+                val pops = InsnList()
+
+                for (arg in argTypes.reversed()) {
+                    if (arg.size == 2)
+                        pops.add(InsnNode(Opcodes.POP2))
+                    else
+                        pops.add(InsnNode(Opcodes.POP))
                 }
 
-            return@processAll if (modified)
-                ProcessAllAction.MODIFIED
-            else
-                ProcessAllAction.NOT_MODIFIED
+                // "this"
+                if (!isStatic)
+                    pops.add(InsnNode(Opcodes.POP))
+
+                // push на Возвращаемое значение по умолчанию. null для объектов, 0 для примитивов
+                val defaultPush = InsnList()
+                when (returntype.sort) {
+                    Type.VOID -> {} // Ничего
+                    Type.OBJECT, Type.ARRAY -> defaultPush.add(InsnNode(Opcodes.ACONST_NULL)) // null
+                    Type.BOOLEAN, Type.BYTE, Type.CHAR, Type.SHORT, Type.INT -> defaultPush.add(InsnNode(Opcodes.ICONST_0)) // 0
+                    Type.FLOAT -> defaultPush.add(InsnNode(Opcodes.FCONST_0)) // 0.0F
+                    Type.LONG -> defaultPush.add(InsnNode(Opcodes.LCONST_0)) // 0L
+                    Type.DOUBLE -> defaultPush.add(InsnNode(Opcodes.DCONST_0)) // 0.0D
+                    else -> throw AssertionError()
+                }
+
+                // Если прошлая insn - INVOKEDYNAMIC то ТАК УЖ И БЫТЬ снесу первый POP и ту инструкцию
+                // Это чтобы удалять лямбду которая оказалась первым параметром этой функции (Кто-то делает Invoke.ifServer(...) штучки в Java)
+                var prev = node.previous
+
+                // Котлин любит генерировать эти инструкции, а в Java ни разу не попадались
+                while (prev is LabelNode || prev is LineNumberNode) {
+                    prev = prev.previous
+                }
+
+                if (prev is InvokeDynamicInsnNode) {
+                    it.instructions.remove(prev)
+                    pops.remove(pops.first)
+                }
+
+                // Удаление, Вставка оставшихся pop, Вставка push дефолта
+                val insertBefore = node.next
+                it.instructions.remove(node)
+                it.instructions.insertBefore(insertBefore, pops)
+                it.instructions.insertBefore(insertBefore, defaultPush)
+            }
+
+            return@processAllMethods ProcessingResult.fromIsModified(modified)
+        }
+
+        master.processAllFields { classNode, it ->
+            // Поля
+            val info = MemberInfo(
+                classNode.name,
+                it.name,
+                it.desc
+            )
+
+            return@processAllFields ProcessingResult.fromIsDeleted(info in fieldsToRemove)
         }
     }
 
