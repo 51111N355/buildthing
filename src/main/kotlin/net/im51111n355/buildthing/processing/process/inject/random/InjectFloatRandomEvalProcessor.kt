@@ -1,11 +1,9 @@
 package net.im51111n355.buildthing.processing.process.inject.random
 
 import net.im51111n355.buildthing.processing.BuildThingProcessor
-import net.im51111n355.buildthing.processing.common.AbstractBuildTimeEvalStep
-import net.im51111n355.buildthing.standard.Inject
+import net.im51111n355.buildthing.processing.process.common.AbstractBuildTimeEvalStep
 import org.objectweb.asm.tree.MethodInsnNode
 import java.util.concurrent.ThreadLocalRandom
-import kotlin.random.asKotlinRandom
 
 class InjectFloatRandomEvalProcessor(
     master: BuildThingProcessor

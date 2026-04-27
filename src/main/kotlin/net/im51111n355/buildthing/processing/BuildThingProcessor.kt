@@ -15,6 +15,7 @@ import net.im51111n355.buildthing.processing.process.inject.value.InjectFloatVal
 import net.im51111n355.buildthing.processing.process.inject.value.InjectIntValueEvalProcessor
 import net.im51111n355.buildthing.processing.process.inject.value.InjectLongValueEvalProcessor
 import net.im51111n355.buildthing.processing.process.inject.value.InjectStringValueEvalProcessor
+import net.im51111n355.buildthing.processing.source.IProcessingSource
 import net.im51111n355.buildthing.util.ClassPathIndex
 import net.im51111n355.buildthing.util.SafeCW
 import org.gradle.api.Project

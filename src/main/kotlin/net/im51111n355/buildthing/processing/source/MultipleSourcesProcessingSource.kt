@@ -1,6 +1,5 @@
 package net.im51111n355.buildthing.processing.source
 
-import net.im51111n355.buildthing.processing.IProcessingSource
 import java.io.File
 import kotlin.collections.flatMap
 

@@ -1,19 +1,15 @@
-package net.im51111n355.buildthing.processing.common
+package net.im51111n355.buildthing.processing.process.common
 
 import net.im51111n355.buildthing.processing.BuildThingProcessor
 import net.im51111n355.buildthing.processing.BuildThingProcessor.ProcessAllAction
-import net.im51111n355.buildthing.processing.IProcessingStep
+import net.im51111n355.buildthing.processing.process.IProcessingStep
 import net.im51111n355.buildthing.util.getConstantPushedValue
 import net.im51111n355.buildthing.util.type
 import org.gradle.api.GradleException
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Type
-import org.objectweb.asm.tree.AbstractInsnNode
-import org.objectweb.asm.tree.InsnNode
-import org.objectweb.asm.tree.IntInsnNode
 import org.objectweb.asm.tree.LdcInsnNode
 import org.objectweb.asm.tree.MethodInsnNode
-import kotlin.math.exp
 
 // BuildTimeEval шаги это например заменить InjectRandom.randInt(10, 10) на случайное число
 // Обязательно работает только со статичными целевыми методами!!!
