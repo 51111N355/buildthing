@@ -5,8 +5,8 @@ import net.im51111n355.buildthing.processing.process.common.AbstractBuildTimeEva
 import org.objectweb.asm.tree.MethodInsnNode
 
 class InjectFloatValueEvalProcessor(
-    master: ProcessingProject
-) : AbstractBuildTimeEvalStep(master) {
+    project: ProcessingProject
+) : AbstractBuildTimeEvalStep(project) {
     override fun describeMethod() = "Inject.floatValue"
 
 
@@ -17,6 +17,6 @@ class InjectFloatValueEvalProcessor(
 
     override fun makeReplacementCst(args: Array<Any?>): Any {
         val key = args[0] as String
-        return master.config.values[key] as Float
+        return project.config.values[key] as Float
     }
 }

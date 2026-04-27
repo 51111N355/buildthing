@@ -5,8 +5,8 @@ import net.im51111n355.buildthing.processing.process.common.AbstractBuildTimeEva
 import org.objectweb.asm.tree.MethodInsnNode
 
 class InjectStringValueEvalProcessor(
-    master: ProcessingProject
-) : AbstractBuildTimeEvalStep(master) {
+    project: ProcessingProject
+) : AbstractBuildTimeEvalStep(project) {
     override fun describeMethod() = "Inject.stringValue"
 
 
@@ -17,6 +17,6 @@ class InjectStringValueEvalProcessor(
 
     override fun makeReplacementCst(args: Array<Any?>): Any {
         val key = args[0] as String
-        return master.config.values[key] as String
+        return this@InjectStringValueEvalProcessor.project.config.values[key] as String
     }
 }

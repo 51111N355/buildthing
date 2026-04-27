@@ -10,10 +10,10 @@ import org.objectweb.asm.Type
 import org.objectweb.asm.tree.AnnotationNode
 
 class RemoveAnnotationsProcessor(
-    val master: ProcessingProject
+    val project: ProcessingProject
 ): IProcessingStep {
     override fun process() {
-        master.processAllClasses { classNode ->
+        project.processAllClasses { classNode ->
             val modified = classNode.visibleAnnotations
                 ?.removeIf {
                     val remove = shouldRemoveAnnotation(it)
@@ -23,7 +23,7 @@ class RemoveAnnotationsProcessor(
             return@processAllClasses ProcessingResult.fromIsModified(modified == true)
         }
 
-        master.processAllFields { _, it ->
+        project.processAllFields { _, it ->
             val modified = it.visibleAnnotations
                 ?.removeIf {
                     val remove = shouldRemoveAnnotation(it)
@@ -33,7 +33,7 @@ class RemoveAnnotationsProcessor(
             return@processAllFields ProcessingResult.fromIsModified(modified == true)
         }
 
-        master.processAllMethods { _, it ->
+        project.processAllMethods { _, it ->
             val modified = it.visibleAnnotations
                 ?.removeIf {
                     val remove = shouldRemoveAnnotation(it)

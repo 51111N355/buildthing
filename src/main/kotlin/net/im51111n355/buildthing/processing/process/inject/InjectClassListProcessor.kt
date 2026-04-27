@@ -18,7 +18,7 @@ import org.objectweb.asm.tree.MethodInsnNode
 import org.objectweb.asm.tree.TypeInsnNode
 
 class InjectClassListProcessor(
-    val master: ProcessingProject
+    val project: ProcessingProject
 ) : IProcessingStep {
     // Key -> List<Class Name>
     private val classMap = mutableMapOf<String, MutableList<String>>()
@@ -27,7 +27,7 @@ class InjectClassListProcessor(
         classMap.clear()
 
         // 1 - Индексация классов с нужной аннотацией @ClassList
-        master.processAllClasses { classNode ->
+        project.processAllClasses { classNode ->
             val annotation = classNode.visibleAnnotations?.getOptionalAnnotation<ClassList>()
                 ?: return@processAllClasses ProcessingResult.NOT_MODIFIED
 
@@ -43,7 +43,7 @@ class InjectClassListProcessor(
         var errors = false
 
         // 2 - Замена INVOKESTATIC Inject.classList(String)
-        master.processAllClasses { classNode ->
+        project.processAllClasses { classNode ->
             var modified = false
 
             classNode.methods.forEach {
@@ -81,7 +81,7 @@ class InjectClassListProcessor(
                         if (value == null) {
                             errors = true
                             dontInject = true
-                            master.gradleProject.logger.error("Expected constant to be passed to a build-time-evaluated method Inject.classList. In method \"${it.name}\" of class \"${classNode.type.className}\".")
+                            project.gradleProject.logger.error("Expected constant to be passed to a build-time-evaluated method Inject.classList. In method \"${it.name}\" of class \"${classNode.type.className}\".")
                             break
                         }
                     }

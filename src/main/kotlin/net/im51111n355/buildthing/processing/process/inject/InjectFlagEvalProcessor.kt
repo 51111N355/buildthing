@@ -6,8 +6,8 @@ import net.im51111n355.buildthing.util.FlagExpressionEval
 import org.objectweb.asm.tree.MethodInsnNode
 
 class InjectFlagEvalProcessor(
-    master: ProcessingProject
-) : AbstractBuildTimeEvalStep(master) {
+    project: ProcessingProject
+) : AbstractBuildTimeEvalStep(project) {
     override fun describeMethod() = "Inject.flag"
 
     override fun canBeReplaced(min: MethodInsnNode)
@@ -18,7 +18,7 @@ class InjectFlagEvalProcessor(
     override fun makeReplacementCst(args: Array<Any?>): Any {
         val flag = args[0] as String
         val value = FlagExpressionEval.eval(flag) {
-            it in master.config.flags
+            it in this@InjectFlagEvalProcessor.project.config.flags
         }
 
         return value

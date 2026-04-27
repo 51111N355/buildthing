@@ -14,7 +14,7 @@ import org.objectweb.asm.tree.MethodInsnNode
 // BuildTimeEval шаги это например заменить InjectRandom.randInt(10, 10) на случайное число
 // Обязательно работает только со статичными целевыми методами!!!
 abstract class AbstractBuildTimeEvalStep(
-    val master: ProcessingProject,
+    val project: ProcessingProject,
 ) : IProcessingStep {
 
     // Для ошибок
@@ -30,7 +30,7 @@ abstract class AbstractBuildTimeEvalStep(
     override fun process() {
         var errors = false
 
-        master.processAllMethods { classNode, it ->
+        project.processAllMethods { classNode, it ->
             var modified = false
             var i = 0
 
@@ -69,7 +69,7 @@ abstract class AbstractBuildTimeEvalStep(
                     if (value == null) {
                         errors = true
                         dontInject = true
-                        master.gradleProject.logger.error("Expected constant to be passed to a build-time-evaluated method ${describeMethod()}. In method \"${it.name}\" of class \"${classNode.type.className}\".")
+                        project.gradleProject.logger.error("Expected constant to be passed to a build-time-evaluated method ${describeMethod()}. In method \"${it.name}\" of class \"${classNode.type.className}\".")
                         break
                     }
 

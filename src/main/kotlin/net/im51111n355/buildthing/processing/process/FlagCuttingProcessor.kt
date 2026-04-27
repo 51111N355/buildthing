@@ -27,10 +27,9 @@ import org.objectweb.asm.tree.LineNumberNode
 import org.objectweb.asm.tree.MethodInsnNode
 import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.tree.TypeInsnNode
-import java.util.Arrays
 
 class FlagCuttingProcessor(
-    val master: ProcessingProject
+    val project: ProcessingProject
 ): IProcessingStep {
     // Владелец Класс -> Его внутренний класс на удаление
     private val classesOwnedByClasses = mutableSetOf<Pair<String, String>>()
@@ -59,11 +58,11 @@ class FlagCuttingProcessor(
         kotlinStyleLambdaMethodsToRemove.clear()
         fieldsToRemove.clear()
 
-        if (master.config.disableCutter)
+        if (project.config.disableCutter)
             return
 
         // Скан удаляемых классов на outerClass / outerMethod+outerMethodDesc
-        master.processAllClasses { classNode ->
+        project.processAllClasses { classNode ->
             val outerClass = classNode.outerClass
             val outerMethod = classNode.outerMethod
             val outerMethodDesc = classNode.outerMethodDesc
@@ -80,7 +79,7 @@ class FlagCuttingProcessor(
 
         // Сначала найти что удалять.
         // Вносит в classesToRemove, methodsToRemove, methodsToRemoveAtCallsite, fieldsToRemove цели для сноса
-        master.processAllClasses { classNode ->
+        project.processAllClasses { classNode ->
             // Проверка на вырезание класса
             if (!isCuttable(classNode.visibleAnnotations))
                 return@processAllClasses ProcessingResult.NOT_MODIFIED
@@ -102,7 +101,7 @@ class FlagCuttingProcessor(
             return@processAllClasses ProcessingResult.NOT_MODIFIED
         }
 
-        master.processAllMethods { classNode, it ->
+        project.processAllMethods { classNode, it ->
             if (!isCuttable(it.visibleAnnotations))
                 return@processAllMethods ProcessingResult.NOT_MODIFIED
 
@@ -129,7 +128,7 @@ class FlagCuttingProcessor(
             return@processAllMethods ProcessingResult.NOT_MODIFIED
         }
 
-        master.processAllFields { classNode, it ->
+        project.processAllFields { classNode, it ->
             if (!isCuttable(it.visibleAnnotations))
                 return@processAllFields ProcessingResult.NOT_MODIFIED
 
@@ -144,7 +143,7 @@ class FlagCuttingProcessor(
         // im51111n355 FIXME: Переделать на processAllMethods/processAllFields в одбновлении
         // Скан лямбды на удаление, зависит от ПОЛНОГО прошлого шага
         // Если включено то снос (уже?) не использованных синтетиков, и private static final методов с "$lambda" в названии
-        master.processAllClasses { classNode ->
+        project.processAllClasses { classNode ->
             if (classNode.name in classesToRemove)
                 return@processAllClasses ProcessingResult.NOT_MODIFIED
 
@@ -222,21 +221,21 @@ class FlagCuttingProcessor(
         // Ищет если где-то есть доступ к чему-либо что будет удалено, игнорирует использования из других удалённых мест
         var validationIssues = false
 
-        master.processAllClasses { classNode ->
+        project.processAllClasses { classNode ->
             if (classNode.name in classesToRemove)
                 return@processAllClasses ProcessingResult.NOT_MODIFIED
 
             // Проверить если реализуемые интерфейсы будут удалены
             classNode.interfaces.forEach {
                 if (it in classesToRemove) {
-                    master.gradleProject.logger.error("Validation error: Class \"${classNode.type.className}\" implements an interface that will be removed! (${it})")
+                    project.gradleProject.logger.error("Validation error: Class \"${classNode.type.className}\" implements an interface that will be removed! (${it})")
                     validationIssues = true
                 }
             }
 
             // Проверить если родительский класс будет удалён
             if (classNode.superName in classesToRemove) {
-                master.gradleProject.logger.error("Validation error: Class \"${classNode.type.className}\" extends a class that will be removed (${classNode.superName}).")
+                project.gradleProject.logger.error("Validation error: Class \"${classNode.type.className}\" extends a class that will be removed (${classNode.superName}).")
                 validationIssues = true
             }
 
@@ -252,7 +251,7 @@ class FlagCuttingProcessor(
                     return@forEach
 
                 if (it.type.internalName in classesToRemove) {
-                    master.gradleProject.logger.error("Validation error: Field \"${it.name}\" in class \"${classNode.type.className}\" is of type that will be removed (${it.type.internalName}).")
+                    project.gradleProject.logger.error("Validation error: Field \"${it.name}\" in class \"${classNode.type.className}\" is of type that will be removed (${it.type.internalName}).")
                     validationIssues = true
                 }
             }
@@ -267,14 +266,14 @@ class FlagCuttingProcessor(
                     .argumentTypes
                     .forEach { argType ->
                         if (argType.internalName in classesToRemove) {
-                            master.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has an argument of type that will be removed (${argType.internalName}).")
+                            project.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has an argument of type that will be removed (${argType.internalName}).")
                             validationIssues = true
                         }
                     }
 
                 // Тип возврата
                 if (Type.getReturnType(it.desc).internalName in classesToRemove) {
-                    master.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" returns a type that will be removed (${Type.getReturnType(it.desc).internalName}).")
+                    project.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" returns a type that will be removed (${Type.getReturnType(it.desc).internalName}).")
                     validationIssues = true
                 }
 
@@ -282,7 +281,7 @@ class FlagCuttingProcessor(
                 it.instructions.forEach { insn ->
                     // Вызовы
                     if (insn is MethodInsnNode && insn.owner in classesToRemove) {
-                        master.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has a call to a class that will be removed (${insn.owner}).")
+                        project.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has a call to a class that will be removed (${insn.owner}).")
                         validationIssues = true
                     }
 
@@ -294,14 +293,14 @@ class FlagCuttingProcessor(
                         )
 
                         if (!isMethodMemberGoingToExist(info, false)) {
-                            master.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has a call to a method that will be removed (${info}).")
+                            project.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has a call to a method that will be removed (${info}).")
                             validationIssues = true
                         }
                     }
 
                     // Поля
                     if (insn is FieldInsnNode && insn.owner in classesToRemove) {
-                        master.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has access of a field of a type that will be removed (${insn.owner}).")
+                        project.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has access of a field of a type that will be removed (${insn.owner}).")
                         validationIssues = true
                     }
 
@@ -313,7 +312,7 @@ class FlagCuttingProcessor(
                         )
 
                         if (info in fieldsToRemove) {
-                            master.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has a field access to a field that will be removed (${info}).")
+                            project.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has a field access to a field that will be removed (${info}).")
                             validationIssues = true
                         }
                     }
@@ -326,19 +325,19 @@ class FlagCuttingProcessor(
                             Opcodes.CHECKCAST -> "a cast to"
                             Opcodes.INSTANCEOF -> "an instanceof check for"
                             else -> {
-                                master.gradleProject.logger.warn("Unknown opcode ${insn.opcode} for TypeInsnNode!")
+                                project.gradleProject.logger.warn("Unknown opcode ${insn.opcode} for TypeInsnNode!")
                                 "an operation with"
                             }
                         }
 
-                        master.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has $descMsg a class that will be removed (${insn.desc}).")
+                        project.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has $descMsg a class that will be removed (${insn.desc}).")
                         validationIssues = true
                     }
                 }
 
                 it.localVariables?.forEach { local ->
                     if (local.desc in classesToRemove) {
-                        master.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has a local variable \"${local.name}\" of type that will be removed (${local.desc}).")
+                        project.gradleProject.logger.error("Validation error: Method \"${it.name}\" in class \"${classNode.type.className}\" has a local variable \"${local.name}\" of type that will be removed (${local.desc}).")
                         validationIssues = true
                     }
                 }
@@ -352,16 +351,16 @@ class FlagCuttingProcessor(
 
         // Дальше примернить основное вырезание
         // Классы
-        master.processAllClasses { classNode ->
+        project.processAllClasses { classNode ->
             return@processAllClasses ProcessingResult.fromIsDeleted(classNode.name in classesToRemove)
         }
 
         // Методы (Основное вырезание)
-        master.processAllMethods { classNode, it ->
+        project.processAllMethods { classNode, it ->
             return@processAllMethods ProcessingResult.fromIsDeleted(!isMethodGoingToExist(classNode, it, true))
         }
 
-        master.processAllMethods { classNode, it ->
+        project.processAllMethods { classNode, it ->
             var modified = false
 
             // Собрать инструкции на удаление
@@ -442,7 +441,7 @@ class FlagCuttingProcessor(
             return@processAllMethods ProcessingResult.fromIsModified(modified)
         }
 
-        master.processAllFields { classNode, it ->
+        project.processAllFields { classNode, it ->
             // Поля
             val info = MemberInfo(
                 classNode.name,
@@ -463,7 +462,7 @@ class FlagCuttingProcessor(
 
         val flag = annotation.getRequiredArgument<String>("value")
         val value = FlagExpressionEval.eval(flag) {
-            it in master.config.flags
+            it in project.config.flags
         }
 
         return !value // <- value - есть ли флаг, а удаление если флага нет !!!
@@ -492,8 +491,8 @@ class FlagCuttingProcessor(
     ): Boolean {
         val removal = info in methodsToRemove
                 || (info in methodsToRemoveAtCallsite && includeCallsiteRemoval)
-                || (info in javaStyleLambdaMethodsToRemove && master.config.deleteJavaStyleLambdas)
-                || (info in kotlinStyleLambdaMethodsToRemove && master.config.deleteKotlinStyleLambdas)
+                || (info in javaStyleLambdaMethodsToRemove && project.config.deleteJavaStyleLambdas)
+                || (info in kotlinStyleLambdaMethodsToRemove && project.config.deleteKotlinStyleLambdas)
 
         return !removal
     }

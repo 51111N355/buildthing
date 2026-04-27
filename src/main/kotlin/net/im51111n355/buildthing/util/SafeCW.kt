@@ -10,7 +10,7 @@ import java.io.InputStream
 import java.util.zip.ZipFile
 
 class ClassPathIndex(
-    val master: ProcessingProject
+    val project: ProcessingProject
 ) {
     // Изначально загружаются только строчки и то в каком файле они есть
     private val notLoadedClasses = mutableMapOf<String, File>()

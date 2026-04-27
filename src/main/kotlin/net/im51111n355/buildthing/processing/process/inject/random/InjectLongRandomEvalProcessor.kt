@@ -6,8 +6,8 @@ import org.objectweb.asm.tree.MethodInsnNode
 import java.util.concurrent.ThreadLocalRandom
 
 class InjectLongRandomEvalProcessor(
-    master: ProcessingProject
-) : AbstractBuildTimeEvalStep(master) {
+    project: ProcessingProject
+) : AbstractBuildTimeEvalStep(project) {
     override fun describeMethod() = "Inject.randLong"
 
 
