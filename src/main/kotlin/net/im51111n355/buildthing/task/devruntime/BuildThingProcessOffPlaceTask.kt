@@ -26,6 +26,11 @@ abstract class BuildThingProcessOffPlaceTask() : DefaultTask(), IBuildThingTask 
         val classesDir = project.buildDir.resolve("classes")
 
         for (directory in sourceDirectories.get()) {
+            // Есть плагин например kotlin -
+            // он "добавляет" папку classes/kotlin/main, но если нет ни одного .kt файла то её на самом деле не будет существовать
+            if (!directory.exists())
+                continue
+
             val relative = directory.relativeTo(classesDir)
             val inProcessing = processingDirectory.resolve(relative)
             list.add(inProcessing)
@@ -44,6 +49,11 @@ abstract class BuildThingProcessOffPlaceTask() : DefaultTask(), IBuildThingTask 
         val sourceDirs = mutableListOf<File>()
 
         for (directory in sourceDirectories.get()) {
+            // Есть плагин например kotlin -
+            // он "добавляет" папку classes/kotlin/main, но если нет ни одного .kt файла то её на самом деле не будет существовать
+            if (!directory.exists())
+                continue
+
             val relative = directory.relativeTo(classesDir)
             val inProcessing = processingDirectory.resolve(relative)
             directory.copyRecursively(inProcessing)
