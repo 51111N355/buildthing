@@ -97,6 +97,17 @@ class ProcessingProject(
                 classNode.accept(classWriter)
                 file.writeBytes(classWriter.toByteArray())
             } catch (e: Exception) {
+                try {
+                    // Если краш произошёл из-за ClassWriter.COMPUTE_FRAMES - то нужны хоть какие-то байты класса чтобы определить в чём именно проблема
+                    val classWriter = SafeCW(ClassWriter.COMPUTE_MAXS, index)
+                    classNode.accept(classWriter)
+                    val bytes = classWriter.toByteArray()
+                    val str = bytes.joinToString(" ")
+                        { "%02X".format(it.toInt() and 0xFF) }
+                    gradleProject.logger.error("Crashed class bytes: $str")
+                } catch (_: Throwable) {
+                }
+
                 throw ProcessingCrashException(node, null, e)
             } catch (e: ProcessingCrashException) {
                 throw e.copy(inClass = node)
