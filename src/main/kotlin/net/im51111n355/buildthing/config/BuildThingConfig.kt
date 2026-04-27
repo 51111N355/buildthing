@@ -19,4 +19,7 @@ class BuildThingConfig : Serializable {
     // В котлин - реализации лямбд генерируются как private static final, без synthetic на самой реализации
     // Эта настройка разрешает сносить private static final методы с "$lambda" в названии, только если они не вызываются в рамках класса.
     var deleteKotlinStyleLambdas = true
+
+    // Логировать в какие классы происходят изменения
+    var logModifications = false
 }

@@ -18,6 +18,7 @@ import net.im51111n355.buildthing.processing.process.inject.value.InjectStringVa
 import net.im51111n355.buildthing.processing.source.IProcessingSource
 import net.im51111n355.buildthing.util.ClassPathIndex
 import net.im51111n355.buildthing.util.SafeCW
+import net.im51111n355.buildthing.util.type
 import org.gradle.api.Project
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
@@ -123,6 +124,10 @@ class ProcessingProject(
 
             if (result == ProcessingResult.MODIFIED) {
                 data.hasUnwrittenModifications = true
+                if (config.logModifications) {
+                    gradleProject.logger.warn("└ Class ${data.node.type.className} modified")
+                }
+
                 continue
             }
 
@@ -148,8 +153,13 @@ class ProcessingProject(
                     throw c.copy(inMember = memberForCrashReport)
                 }
 
-                if (result != ProcessingResult.NOT_MODIFIED)
+                if (result != ProcessingResult.NOT_MODIFIED) {
                     classModified = true
+
+                    if (config.logModifications) {
+                        gradleProject.logger.warn("| Method ${classNode.type.className}#${methodNode.name} modified")
+                    }
+                }
 
                 return@removeIf result == ProcessingResult.DELETE
             }
@@ -175,8 +185,13 @@ class ProcessingProject(
                     throw c.copy(inMember = memberForCrashReport)
                 }
 
-                if (result != ProcessingResult.NOT_MODIFIED)
+                if (result != ProcessingResult.NOT_MODIFIED) {
                     classModified = true
+
+                    if (config.logModifications) {
+                        gradleProject.logger.warn("| Field ${classNode.type.className}#${fieldNode.name} modified")
+                    }
+                }
 
                 return@removeIf result == ProcessingResult.DELETE
             }
