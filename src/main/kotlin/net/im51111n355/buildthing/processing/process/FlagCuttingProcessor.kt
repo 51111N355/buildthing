@@ -171,8 +171,12 @@ class FlagCuttingProcessor(
                     return@forEach
 
                 for (insn in it.instructions) {
-                    if (insn is InvokeDynamicInsnNode) {
-                        println(insn.bsmArgs.contentToString())
+                    if (insn is InvokeDynamicInsnNode
+                        && insn.bsm.tag == Opcodes.H_INVOKESTATIC
+                        && insn.bsm.owner == "java/lang/invoke/LambdaMetafactory"
+                        && insn.bsm.name == "metafactory"
+                        && insn.bsm.desc == "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;"
+                        && !insn.bsm.isInterface) {
                         val target = insn.bsmArgs[1] as Handle
 
                         val info = MemberInfo(
