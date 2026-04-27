@@ -427,7 +427,19 @@ class FlagCuttingProcessor(
                 }
 
                 if (prev is InvokeDynamicInsnNode) {
+                    // С удалением
+                    val specialPops = InsnList()
+                    val invokeDynamicArgTypes = Type.getArgumentTypes(prev.desc)
+                    for (arg in invokeDynamicArgTypes.reversed()) {
+                        if (arg.size == 2)
+                            specialPops.add(InsnNode(Opcodes.POP2))
+                        else
+                            specialPops.add(InsnNode(Opcodes.POP))
+                    }
+
+
                     it.instructions.remove(prev)
+                    pops.insertBefore(pops.first, specialPops)
                     pops.remove(pops.first)
                 }
 
