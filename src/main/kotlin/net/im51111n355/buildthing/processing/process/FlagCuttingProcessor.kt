@@ -170,6 +170,20 @@ class FlagCuttingProcessor(
                     return@forEach
 
                 for (insn in it.instructions) {
+                    // Прямой вызов кандидата (напр. локальная функция Kotlin внутри лямбды компилируется
+                    // как private synthetic с "$lambda" в имени, но вызывается напрямую через INVOKESTATIC,
+                    // а не через LambdaMetafactory) - значит метод используется и сносить его нельзя.
+                    if (insn is MethodInsnNode) {
+                        val info = MemberInfo(
+                            insn.owner,
+                            insn.name,
+                            insn.desc
+                        )
+
+                        javaStyleCandidates.remove(info)
+                        kotlinStyleCandidates.remove(info)
+                    }
+
                     if (insn is InvokeDynamicInsnNode
                         && insn.bsm.tag == Opcodes.H_INVOKESTATIC
                         && insn.bsm.owner == "java/lang/invoke/LambdaMetafactory"
